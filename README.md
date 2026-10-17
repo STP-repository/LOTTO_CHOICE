@@ -2,7 +2,9 @@
 
 새로 작성한 React + TypeScript + Vite + Tailwind CSS + Recharts 웹 프로그램입니다. Node.js 수집기가 동행복권 실제 당첨 기록을 저장하고, 브라우저가 통계·추천·백테스트를 계산합니다. 학습형 AI 모델을 사용하지 않으며 당첨 확률 향상을 주장하지 않습니다.
 
-배포 계정: `eogus3535-sudo`. 공개 URL은 아래 예약 배포 성공 후 GitHub Pages가 반환한 주소로 확인합니다.
+공개 사이트: https://eogus3535-sudo.github.io/lotto-pattern-lab/
+
+배포 계정: `eogus3535-sudo`. 주간 자동 갱신이 활성화되었고 첫 GitHub Actions 실행에서 공식 데이터 수집, 9개 테스트, 빌드, 배포가 모두 성공했습니다. 실행 기록: https://github.com/eogus3535-sudo/lotto-pattern-lab/actions/runs/39034075560
 
 자동 갱신은 `.github/workflows/deploy.yml`에서 토요일 22:17, 일요일 07:17 KST에 실행됩니다. 공식 데이터 수집 → 검증·테스트 → 빌드 → 공개 사이트 배포 순서이며 사용자 PC가 꺼져 있어도 동작합니다. 수집 실패 시 정상 파일을 보존하고, 최신 데이터 검증이 실패하면 기존 공개 배포를 유지합니다. GitHub 예약 작업은 지연되거나 비활성 저장소에서 중단될 수 있으므로 Actions 실행 기록으로 상태를 확인하세요.
 
