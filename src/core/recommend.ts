@@ -7,6 +7,7 @@ export function rng(seed:number) {let s=seed>>>0;return ()=>{s+=0x6D2B79F5;let t
 export function model(draws:Draw[]) {
   const all=frequency(draws),recent=frequency(draws.slice(-100)),gap=Array<number>(46).fill(draws.length);
   draws.forEach((d,i)=>d.numbers.forEach(n=>gap[n]=draws.length-i-1));
+  gap[0]=0; // Index zero is not a lottery number and must not affect normalization.
   const norm=(a:number[])=>a.map(n=>n/Math.max(1,...a));
   return {all:norm(all),recent:norm(recent),gap:norm(gap),cold:all.map(n=>(Math.max(...all)+1-n)/(Math.max(...all)+1))};
 }

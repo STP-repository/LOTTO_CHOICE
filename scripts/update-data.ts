@@ -1,7 +1,7 @@
 import { mkdir,readFile,rename,writeFile } from 'node:fs/promises';
 import { collect,validateDraws,type Dataset } from '../src/core/data';
 await mkdir('public/data',{recursive:true}); await mkdir('data',{recursive:true});
-let previous:Dataset|undefined;try{previous=JSON.parse(await readFile('public/data/lotto.json','utf8'));validateDraws(previous!.draws);}catch{}
+let previous:Dataset|undefined;try{const candidate:Dataset=JSON.parse(await readFile('public/data/lotto.json','utf8'));validateDraws(candidate.draws);previous=candidate;}catch{}
 try {
   const next=await collect();
   if(previous && next.draws.at(-1)!.round<previous.draws.at(-1)!.round)throw new Error('기존 데이터보다 오래된 응답입니다.');
