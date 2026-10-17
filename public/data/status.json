@@ -1,5 +1,7 @@
 {
-  "checkedAt": "2026-10-17T12:55:39.535Z",
+  "checkedAt": "2026-10-17T16:24:28.473Z",
   "ok": true,
-  "errors": []
+  "errors": [
+    "https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=all: Unexpected token '<', \"\n<!DOCTYPE \"... is not valid JSON"
+  ]
 }
