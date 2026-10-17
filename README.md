@@ -1,4 +1,4 @@
-# 로또 베스트 초이스
+# Lotto Best Choice
 
 새로 작성한 React + TypeScript + Vite + Tailwind CSS + Recharts 웹 프로그램입니다. Node.js 수집기가 동행복권 실제 당첨 기록을 저장하고, 브라우저가 통계·추천·백테스트를 계산합니다. 학습형 AI 모델을 사용하지 않으며 당첨 확률 향상을 주장하지 않습니다.
 
