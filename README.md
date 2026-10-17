@@ -2,19 +2,9 @@
 
 새로 작성한 React + TypeScript + Vite + Tailwind CSS + Recharts 웹 프로그램입니다. Node.js 수집기가 동행복권 실제 당첨 기록을 저장하고, 브라우저가 통계·추천·백테스트를 계산합니다. 학습형 AI 모델을 사용하지 않으며 당첨 확률 향상을 주장하지 않습니다.
 
-현재 배포: https://brkimkfc-arch.github.io/lotto-pattern-lab/ (GitHub Pages `gh-pages` 정적 브랜치)
+배포 계정: `eogus3535-sudo`. 공개 URL은 아래 예약 배포 성공 후 GitHub Pages가 반환한 주소로 확인합니다.
 
-사용자 선택에 따라 **정적 배포만 진행**했습니다. GitHub OAuth의 `workflow` 권한이 없어 자동 예약은 활성화하지 않았습니다. 로컬 `.github/workflows/deploy.yml`과 원격 `deployment/github-actions.yml`에 실행 가능한 예약 설정을 보존했습니다. 추후 자동화를 원하면 `workflow` 권한을 인증한 뒤 해당 템플릿을 `.github/workflows/deploy.yml`로 커밋하고 Pages 소스를 GitHub Actions로 전환합니다.
-
-현재 정적 사이트의 수동 갱신·재배포:
-
-```sh
-npm run data:update
-npm run build
-node scripts/deploy-static.mjs brkimkfc-arch/lotto-pattern-lab
-```
-
-마지막 명령은 이 저장소의 `gh-pages` 브랜치를 새 빌드로 교체합니다. 소스 수정은 별도로 `main`에 커밋·push합니다. 워크플로우 추가는 해당 권한을 인증한 이후 진행하세요.
+자동 갱신은 `.github/workflows/deploy.yml`에서 토요일 22:17, 일요일 07:17 KST에 실행됩니다. 공식 데이터 수집 → 검증·테스트 → 빌드 → 공개 사이트 배포 순서이며 사용자 PC가 꺼져 있어도 동작합니다. 수집 실패 시 정상 파일을 보존하고, 최신 데이터 검증이 실패하면 기존 공개 배포를 유지합니다. GitHub 예약 작업은 지연되거나 비활성 저장소에서 중단될 수 있으므로 Actions 실행 기록으로 상태를 확인하세요.
 
 ## 실행
 

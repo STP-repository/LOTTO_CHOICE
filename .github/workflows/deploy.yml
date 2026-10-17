@@ -1,0 +1,68 @@
+name: Collect, verify and deploy Lotto Lab
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Saturday 22:17 and Sunday 07:17 KST; second attempt for delayed sources.
+    - cron: '17 13,22 * * 6'
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: lotto-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Collect data (retain last good file on failure)
+        id: collect
+        continue-on-error: true
+        run: npm run data:update
+      - name: Save data and collection status
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if [ -f data/last-error.json ]; then git add data/last-error.json; fi
+          if ! git diff --cached --quiet; then
+            git commit -m "Update lottery data and collection status"
+            git push
+          fi
+      - name: Type check
+        run: npm run typecheck
+      - name: Tests
+        # Latest check is intentionally strict: fail stale data rather than silently publish.
+        run: npm test
+      - run: npm run build
+        env:
+          VITE_SCHEDULE_ENABLED: "true"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Preserve failure details
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-status
+          path: |
+            public/data/status.json
+            data/last-error.json
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
