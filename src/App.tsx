@@ -14,7 +14,7 @@ function Panel({title,sub,children,className=''}:{title:string;sub?:string;child
 function download(text:string,name:string,type='text/csv;charset=utf-8') {const url=URL.createObjectURL(new Blob(['\uFEFF'+text],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 export default function App(){
   const [page,setPage]=useState(0),[data,setData]=useState<Dataset|null>(cached),[busy,setBusy]=useState(true),[notice,setNotice]=useState(''),[error,setError]=useState('');
-  const [mode,setMode]=useState<Mode>('composite'),[games,setGames]=useState(5),[seed,setSeed]=useState(20261017),[recommendations,setRecommendations]=useState<ReturnType<typeof recommend>>([]),[copyMessage,setCopyMessage]=useState('');
+  const [mode,setMode]=useState<Mode>('integrated'),[games,setGames]=useState(5),[seed,setSeed]=useState(20261017),[recommendations,setRecommendations]=useState<ReturnType<typeof recommend>>([]),[copyMessage,setCopyMessage]=useState('');
   const [windowSize,setWindowSize]=useState('all'),[year,setYear]=useState(''),[sort,setSort]=useState('number');
   const [result,setResult]=useState<ReturnType<typeof backtest>|null>(null),[testing,setTesting]=useState(false),[testedMode,setTestedMode]=useState<Mode>('composite');
   const [status,setStatus]=useState<{checkedAt:string;ok:boolean;errors:string[]}|null>(null);const worker=useRef<Worker|null>(null),lock=useRef(false);
