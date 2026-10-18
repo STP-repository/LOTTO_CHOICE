@@ -1,10 +1,5 @@
 import { recent15, type Draw } from './data';
 
-export const PATTERN_SUM_TOLERANCE = 20;
-/** Preference around the observed mean, not a probability estimate. */
-export function sumCloseness(ns: number[], meanSum: number) {
-  return Math.max(0, 1 - Math.abs(ns.reduce((a, b) => a + b, 0) - meanSum) / PATTERN_SUM_TOLERANCE);
-}
 export function consecutivePairs(ns: number[]) {
   const sorted = [...ns].sort((a, b) => a - b);
   return sorted.slice(1).filter((n, i) => n === sorted[i] + 1).length;
@@ -14,21 +9,21 @@ export function patternProfile(input: Draw[]) {
   const sorted = [...input].sort((a, b) => a.round - b.round);
   const draws = recent15(sorted, new Date(`${sorted.at(-1)!.date}T12:00:00+09:00`));
   const last = draws.at(-1)!;
-  const meanSum = draws.reduce((s, d) => s + d.numbers.reduce((a, b) => a + b, 0), 0) / draws.length;
-  const sumMin = Math.ceil(meanSum - PATTERN_SUM_TOLERANCE), sumMax = Math.floor(meanSum + PATTERN_SUM_TOLERANCE);
+
+
   const odd = Array<number>(7).fill(0), consecutive = Array<number>(6).fill(0), overlaps = Array<number>(7).fill(0);
-  let matchingHistory = 0;
+
   draws.forEach((d, i) => {
     const o = d.numbers.filter(n => n % 2).length, c = consecutivePairs(d.numbers);
-    const sum = d.numbers.reduce((a, b) => a + b, 0);
+
     odd[o]++; consecutive[c]++;
     if (i) {
       const overlap = d.numbers.filter(n => draws[i - 1].numbers.includes(n)).length;
       overlaps[overlap]++;
-      if (o >= 2 && o <= 4 && c >= 1 && overlap >= 1 && sum >= sumMin && sum <= sumMax) matchingHistory++;
+
     }
   });
-  return { draws, last, meanSum, sumMin, sumMax, odd, consecutive, overlaps, matchingHistory, comparisonCount: Math.max(0, draws.length - 1) };
+  return { draws, last, odd, consecutive, overlaps };
 }
 /** Positive weighted sampling keeps every candidate eligible; scores are preferences only. */
 export function weightedIndex(weights: number[], random: () => number) {
@@ -46,7 +41,7 @@ export function selectPatternNumbers(profile: ReturnType<typeof patternProfile>,
     seen.add(key);
     const odd = ns.filter(n => n % 2).length, c = consecutivePairs(ns), overlap = ns.filter(n => profile.last.numbers.includes(n)).length;
     const history = (profile.odd[odd] / Math.max(1, ...profile.odd) + profile.consecutive[c] / Math.max(1, ...profile.consecutive) + profile.overlaps[overlap] / Math.max(1, ...profile.overlaps)) / 3;
-    const rating = .6 * history + .4 * sumCloseness(ns, profile.meanSum);
+    const rating = history;
     candidates.push({ numbers: ns, rating });
   }
   if (candidates.length < count) throw new Error('고유 후보 조합이 부족합니다.');

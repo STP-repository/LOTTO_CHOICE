@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {evidenceModel,evaluateEvidence,FEATURE_WEIGHTS} from '../src/core/evidence';
 import type {Draw} from '../src/core/data';
 const draws:Draw[]=[{round:1,date:'2026-01-03',numbers:[1,2,3,4,5,6],bonus:7},{round:2,date:'2026-01-10',numbers:[1,2,10,20,30,40],bonus:7}];
-test('10개 근거 지표는 고정 기록에서 빈도·끝자리·번호 쌍·미출현을 정확히 계산한다',()=>{
+test('합계가 제외된 9개 근거 지표는 고정 기록에서 빈도·끝자리·번호 쌍·미출현을 정확히 계산한다',()=>{
  const m=evidenceModel(draws),e=evaluateEvidence([1,2,10,20,30,40],m);
  assert.equal(m.pairs.get('1,2'),2);assert.equal(m.endings[0],4);assert.equal(m.gap[3],1);assert.equal(m.counts[1],2);
- assert.equal(m.meanSum,62);assert.equal(m.hist[3].get('2'),1);
+ assert.equal(Object.keys(FEATURE_WEIGHTS).length,9);assert.ok(!('sum' in e.values));assert.ok(!('sum' in FEATURE_WEIGHTS));assert.equal(m.hist[3].get('2'),1);
  assert.equal(e.values.pairs,(2+14)/15/2);assert.equal(e.values.endings,(2+2+4*4)/6/4);
  assert.ok(Math.abs(Object.values(FEATURE_WEIGHTS).reduce((a,b)=>a+b,0)-1)<1e-10);
  assert.ok(Object.values(e.values).every(v=>Number.isFinite(v)&&v>=0&&v<=1));assert.equal(e.reasons.length,6);
@@ -15,3 +15,5 @@ test('10개 근거 지표는 고정 기록에서 빈도·끝자리·번호 쌍·
  assert.notDeepEqual(evaluateEvidence([1,2,10,20,30,40],evidenceModel(changed)).values,e.values);
  assert.deepEqual(e,evaluateEvidence([1,2,10,20,30,40],m));
 });
+
+test('합계 관련 메타데이터를 바꿔도 평가값은 변하지 않는다',()=>{const m=evidenceModel(draws),ns=[1,2,10,20,30,40],before=evaluateEvidence(ns,m);Object.assign(m,{meanSum:999,sumMin:1,sumMax:1});assert.deepEqual(evaluateEvidence(ns,m),before);});

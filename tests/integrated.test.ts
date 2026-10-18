@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
-import {recommend} from '../src/core/recommend';import {backtest} from '../src/core/backtest';import {evidenceModel,evaluateEvidence} from '../src/core/evidence';import {rankAllCombinations,compareRank,TOTAL_COMBINATIONS} from '../src/core/ranking';import type {Dataset} from '../src/core/data';
+import {recommend,CONDITION_FEATURES,modeWeights} from '../src/core/recommend';import {backtest} from '../src/core/backtest';import {evidenceModel,evaluateEvidence} from '../src/core/evidence';import {rankAllCombinations,compareRank,TOTAL_COMBINATIONS} from '../src/core/ranking';import type {Dataset} from '../src/core/data';
 const {draws}=JSON.parse(await readFile('public/data/lotto.json','utf8')) as Dataset;
 test('전수 검색 결과는 별도의 소규모 전체 조합 계산과 일치한다',()=>{
  const m=evidenceModel(draws),manual=[] as {numbers:number[];rating:number}[];
@@ -24,3 +24,5 @@ test('통합 백테스트에서 대상 당첨번호를 바꿔도 해당 회차 �
  const a=backtest(subset,'integrated',42,5),b=backtest(changed,'integrated',999,5);
  assert.ok(a.rows.every(r=>r.trainingLast<r.round));assert.deepEqual(a.rows.at(-1)!.predicted,b.rows.at(-1)!.predicted);
 });
+
+test('개별 조건은 선택한 한 지표만 반영하고 전수 검색 점수가 일반 평가식과 일치한다',()=>{const m=evidenceModel(draws);for(const mode of Object.keys(CONDITION_FEATURES) as (keyof typeof CONDITION_FEATURES)[]){const w=modeWeights(mode);assert.equal(Object.values(w).filter(v=>v>0).length,1);const actual=rankAllCombinations(m,10,10,undefined,w),manual=[] as {numbers:number[];rating:number}[];function visit(ns:number[],next:number){if(ns.length===6){manual.push({numbers:ns,rating:evaluateEvidence(ns,m,w).rating});return;}for(let n=next;n<=10;n++)visit([...ns,n],n+1);}visit([],1);manual.sort(compareRank);assert.deepEqual(actual.top.map(g=>g.numbers),manual.slice(0,10).map(g=>g.numbers));const g=recommend(draws,mode,5,42);assert.deepEqual(g,recommend(draws,mode,5,999));assert.ok(g.every(x=>x.rank&&x.reasons));}});
