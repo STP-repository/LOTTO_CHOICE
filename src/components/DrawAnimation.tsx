@@ -15,14 +15,10 @@ export default function DrawAnimation({ numbers, games, onComplete }: {
   }
   useEffect(() => {
     finished.current = false;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      finish();
-      return;
-    }
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const modal = dialog.current;
     modal?.showModal();
-    const timers = numbers.map((_, i) => window.setTimeout(() => setRevealed(i + 1), 1300 + i * 400));
-    timers.push(window.setTimeout(finish, 4200));
+    const timers = numbers.map((_, i) => window.setTimeout(() => setRevealed(i + 1), reduceMotion ? 150 + i * 150 : 1300 + i * 400));
     return () => { timers.forEach(window.clearTimeout); modal?.close(); };
   }, []);
 
@@ -31,7 +27,7 @@ export default function DrawAnimation({ numbers, games, onComplete }: {
     <div className="draw-stage">
       <span className="draw-eyebrow">LOTTO BEST CHOICE</span>
       <h2 id="draw-animation-title">공을 굴려 번호를 만나보세요</h2>
-      <p className="draw-subtitle">{games > 1 ? `첫 게임의 6개 번호를 공개한 뒤 ${games}게임을 모두 보여드려요.` : '선택한 방식으로 생성한 6개 번호를 하나씩 보여드려요.'}</p>
+      <p className="draw-subtitle">{games > 1 ? `첫 게임을 공개합니다. 아래 확인 버튼을 누르면 ${games}게임을 모두 볼 수 있어요.` : '번호 공개 후 아래 확인 버튼을 누르면 추천 결과를 볼 수 있어요.'}</p>
       <div className={`lotto-machine ${revealed === 6 ? 'is-revealed' : ''}`} aria-hidden="true">
         <div className="machine-globe">
           <div className="machine-rotor"/>
@@ -51,8 +47,8 @@ export default function DrawAnimation({ numbers, games, onComplete }: {
           {i < revealed ? <span className={`ball ball-${Math.floor((n - 1) / 10)}`}>{n}</span> : <span className="draw-placeholder">?</span>}
         </span>)}
       </div>
-      <p className="draw-progress" role="status">{revealed < 6 ? `${revealed} / 6개 번호 공개` : '번호가 준비됐어요!'}</p>
-      <button autoFocus type="button" className="btn btn-white" onClick={finish}>애니메이션 건너뛰기</button>
+      <p className="draw-progress" role="status">{revealed < 6 ? `${revealed} / 6개 번호 공개` : '번호가 준비됐어요. 아래 버튼으로 확인하세요.'}</p>
+      <button autoFocus type="button" className={`btn ${revealed === 6 ? 'btn-primary' : 'btn-white'}`} onClick={finish}>{revealed === 6 ? '전체 추천번호 보기' : '애니메이션 건너뛰기'}</button>
       <small className="draw-caption">번호 공개를 위한 연출이며 실제 복권 추첨이 아닙니다.</small>
     </div>
   </dialog>;
