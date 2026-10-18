@@ -18,12 +18,8 @@ export const CHOICES:{mode:Mode;icon:string;title:string;description:string}[]=[
  {mode:'all',icon:'▥',title:'15년 출현 빈도',description:'15년 번호별 출현 횟수만 평가해 점수가 높은 순으로 추천해요.'},
  {mode:'recent',icon:'↗',title:'최근 100회 흐름',description:'최근 100회 출현 횟수만 평가해 점수순으로 추천해요.'},
  {mode:'overdue',icon:'◷',title:'미출현 기간',description:'마지막 출현 이후 경과 회차만 평가해 오래 쉬었던 번호 중심으로 추천해요.'},
- {mode:'odd',icon:'◐',title:'홀짝 패턴',description:'과거 홀짝 구성의 빈도만 비교해 추천해요.'},
- {mode:'ranges',icon:'▥',title:'구간 구성 패턴',description:'구간별 번호 개수 구성이 과거에 나온 빈도만 비교해 추천해요.'},
  {mode:'endings',icon:'◎',title:'끝자리 빈도',description:'번호 끝자리의 과거 출현 빈도만 비교해 추천해요.'},
  {mode:'pairs',icon:'◇',title:'함께 나온 번호 쌍',description:'한 조합의 15개 번호 쌍이 함께 나왔던 횟수만 평가해 추천해요.'},
- {mode:'consecutive',icon:'↔',title:'연속번호 패턴',description:'연속 쌍 개수별 과거 빈도만 평가해 추천해요. 연속번호 유무를 강제하지 않아요.'},
- {mode:'overlap',icon:'↻',title:'직전 회차 중복 패턴',description:'직전 회차와 겹치는 개수의 과거 빈도만 평가해 추천해요.'},
 ];
 
 export function combinationFacts(numbers: number[]) {

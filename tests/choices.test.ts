@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CHOICES, METHOD_DETAILS, combinationFacts } from '../src/core/choices';
+import {FEATURE_WEIGHTS} from '../src/core/evidence';
 import { MODES } from '../src/core/recommend';
-test('통합·무작위를 유지하고 9개 개별 분석 조건을 제공한다', () => {
-  assert.deepEqual(CHOICES.map(c => c.mode), ['integrated','random','all','recent','overdue','odd','ranges','endings','pairs','consecutive','overlap']);
+test('구성 전용 네 조건은 메뉴에서 빼고 통합 분석 지표로 유지한다', () => {
+  assert.deepEqual(CHOICES.map(c => c.mode), ['integrated','random','all','recent','overdue','endings','pairs']);
+  for(const key of ['odd','ranges','consecutive','overlap'] as const)assert.ok(FEATURE_WEIGHTS[key]>0);
   assert.deepEqual(METHOD_DETAILS.map(c => c.mode).sort(), Object.keys(MODES).sort());
 });
 test('번호 설명은 홀짝·합계·끝 구간·연속 쌍을 정확히 계산하고 입력을 보존한다', () => {
