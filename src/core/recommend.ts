@@ -4,7 +4,7 @@ import type { Draw } from './data';
 import { frequency } from './statistics';
 import { recent15 } from './data';
 import { patternProfile, selectPatternNumbers, consecutivePairs } from './pattern';
-export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천',pattern:'15년 패턴 기준',overdue:'미출현 기간',odd:'홀짝 패턴',ranges:'구간 구성',endings:'끝자리 빈도',pairs:'동반 번호 쌍',consecutive:'연속번호 패턴',overlap:'직전 중복 패턴'} as const;
+export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천',pattern:'15년 패턴 기준',overdue:'미출현 기간',odd:'홀짝 패턴',ranges:'구간 구성',pairs:'동반 번호 쌍',consecutive:'연속번호 패턴',overlap:'직전 중복 패턴'} as const;
 export type Mode=keyof typeof MODES;
 export type BaseMode='all'|'recent'|'hot'|'cold'|'balanced'|'composite'|'random';
 export type SourceMode=Exclude<Mode,'integrated'>;
@@ -49,7 +49,7 @@ export function recommend(draws:Draw[],mode:Mode,count:number,seed:number):Recom
   return result;
 }
 
-export const CONDITION_FEATURES={all:'frequency',recent:'recent',overdue:'overdue',odd:'odd',ranges:'ranges',endings:'endings',pairs:'pairs',consecutive:'consecutive',overlap:'overlap'} as const;
+export const CONDITION_FEATURES={all:'frequency',recent:'recent',overdue:'overdue',odd:'odd',ranges:'ranges',pairs:'pairs',consecutive:'consecutive',overlap:'overlap'} as const;
 export function isRankedMode(mode:Mode){return mode==='integrated'||mode in CONDITION_FEATURES;}
 export function modeWeights(mode:Mode):FeatureWeights{
  if(mode==='integrated')return FEATURE_WEIGHTS;

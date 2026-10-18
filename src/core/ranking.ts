@@ -9,9 +9,9 @@ export function rankAllCombinations(m:ReturnType<typeof evidenceModel>,count=10,
  const number=new Float64Array(46),pair=new Float64Array(46*46),rangeCode=new Uint16Array(46),previous=new Uint8Array(46);
  const hist=(i:number,w:number)=>{const t=new Float64Array(7),max=Math.max(1,...m.hist[i].values());for(const [k,n]of m.hist[i])t[Number(k)]=w*n/max;return t;};
  const odd=hist(0,W.odd),consecutive=hist(2,W.consecutive),overlap=hist(3,W.overlap),ranges=new Float64Array(16807);
- const maxima=[m.counts,m.recent,m.gap,m.endings].map(x=>Math.max(1,...x));
+ const maxima=[m.counts,m.recent,m.gap].map(x=>Math.max(1,...x));
  for(let n=1;n<=45;n++){
-  number[n]=(W.frequency*m.counts[n]/maxima[0]+W.recent*m.recent[n]/maxima[1]+W.overdue*m.gap[n]/maxima[2]+W.endings*m.endings[n%10]/maxima[3])/6;
+  number[n]=(W.frequency*m.counts[n]/maxima[0]+W.recent*m.recent[n]/maxima[1]+W.overdue*m.gap[n]/maxima[2])/6;
   rangeCode[n]=7**Math.floor((n-1)/10);previous[n]=Number(m.last.numbers.includes(n));
  }
  const maxPair=Math.max(1,...m.pairs.values());
