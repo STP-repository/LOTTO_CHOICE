@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-10-18T05:44:06.687Z",
+  "dataLastRound": 1246,
+  "weights": {
+    "frequency": 0.12,
+    "recent": 0.12,
+    "overdue": 0.06,
+    "odd": 0.1,
+    "sum": 0.14,
+    "ranges": 0.1,
+    "endings": 0.08,
+    "pairs": 0.1,
+    "consecutive": 0.09,
+    "overlap": 0.09
+  },
+  "method": "가중치를 사전에 고정하고 시간 순서가 다른 두 기간을 검증했습니다. 기간별 결과로 가중치를 재조정하지 않았습니다. 기존에 관찰한 데이터이므로 완전히 새로운 미래 실험은 아닙니다. 각 회차의 추천에는 해당 회차 이전 데이터만 사용합니다. 시드별 결과는 같은 당첨 기록을 공유하므로 독립 표본으로 간주하지 않습니다.",
+  "results": [
+    {
+      "period": "사전 확인",
+      "runs": [
+        {
+          "seed": 42,
+          "firstRound": 1047,
+          "lastRound": 1146,
+          "rounds": 100,
+          "games": 5,
+          "average": 0.8219999999999998,
+          "randomAverage": 0.7900000000000001,
+          "noLeakage": true
+        },
+        {
+          "seed": 645,
+          "firstRound": 1047,
+          "lastRound": 1146,
+          "rounds": 100,
+          "games": 5,
+          "average": 0.7759999999999999,
+          "randomAverage": 0.8180000000000001,
+          "noLeakage": true
+        },
+        {
+          "seed": 20261018,
+          "firstRound": 1047,
+          "lastRound": 1146,
+          "rounds": 100,
+          "games": 5,
+          "average": 0.7959999999999995,
+          "randomAverage": 0.7440000000000003,
+          "noLeakage": true
+        }
+      ]
+    },
+    {
+      "period": "최종 확인",
+      "runs": [
+        {
+          "seed": 42,
+          "firstRound": 1147,
+          "lastRound": 1246,
+          "rounds": 100,
+          "games": 5,
+          "average": 0.8199999999999997,
+          "randomAverage": 0.752,
+          "noLeakage": true
+        },
+        {
+          "seed": 645,
+          "firstRound": 1147,
+          "lastRound": 1246,
+          "rounds": 100,
+          "games": 5,
+          "average": 0.7759999999999999,
+          "randomAverage": 0.8219999999999997,
+          "noLeakage": true
+        },
+        {
+          "seed": 20261018,
+          "firstRound": 1147,
+          "lastRound": 1246,
+          "rounds": 100,
+          "games": 5,
+          "average": 0.8140000000000001,
+          "randomAverage": 0.7239999999999999,
+          "noLeakage": true
+        }
+      ]
+    }
+  ],
+  "conclusion": "무작위 대비 당첨 확률 우위가 검증됐다고 해석하지 않습니다."
+}

@@ -1,3 +1,4 @@
+import { evidenceModel, evaluateEvidence } from './evidence';
 import type { Draw } from './data';
 import { frequency } from './statistics';
 import { recent15 } from './data';
@@ -6,7 +7,7 @@ export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:
 export type Mode=keyof typeof MODES;
 export type BaseMode=Exclude<Mode,'integrated'|'pattern'>;
 export type SourceMode=Exclude<Mode,'integrated'>;
-export interface RecommendedGame {numbers:number[];score:number|null;sources?:SourceMode[];pattern?:{referenceRound:number;meanSum:number;sumMin:number;sumMax:number;overlap:number[];consecutive:number}}
+export interface RecommendedGame {numbers:number[];score:number|null;sources?:SourceMode[];reasons?:string[];pattern?:{referenceRound:number;meanSum:number;sumMin:number;sumMax:number;overlap:number[];consecutive:number}}
 export const WEIGHTS={all:0.35,recent:0.25,overdue:0.10,balance:0.30};
 export function rng(seed:number) {let s=seed>>>0;return ()=>{s+=0x6D2B79F5;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 export function model(draws:Draw[]) {
@@ -48,7 +49,7 @@ export function recommend(draws:Draw[],mode:Mode,count:number,seed:number):Recom
 
 export const INTEGRATED_SOURCES:SourceMode[]=['all','recent','hot','cold','balanced','composite','random','pattern'];
 export const INTEGRATED_EVALUATORS:BaseMode[]=['all','recent','cold','balanced','composite'];
-export const INTEGRATED_WEIGHTS={criteria:.45,historical:.25,sumCloseness:.30,overlapPenalty:.08,sourcePenalty:.05};
+export const INTEGRATED_WEIGHTS={overlapPenalty:.08,sourcePenalty:.05};
 
 /** Historical features are soft preferences; no pattern filter or fixed allocation. */
 export function integratedRecommendations(input:Draw[],count:number,seed:number):RecommendedGame[] {
@@ -66,18 +67,10 @@ export function integratedRecommendations(input:Draw[],count:number,seed:number)
     }
   });
   const profile=patternProfile(draws);
-  const candidates=[...pool.values()],m=model(draws);
+  const candidates=[...pool.values()];
   if(candidates.length<count)throw new Error('중복 제거 후 고유 후보가 부족합니다.');
-  const values=INTEGRATED_EVALUATORS.map(mode=>candidates.map(c=>score(c.numbers,m,mode)!));
-  const histograms=Array.from({length:5},()=>new Map<number,number>());
-  const features=(ns:number[],previous:number[]=profile.last.numbers)=>[ns.filter(n=>n%2).length,Math.floor(ns.reduce((a,b)=>a+b,0)/20),new Set(ns.map(n=>Math.floor((n-1)/10))).size,ns.slice(1).filter((n,i)=>n===ns[i]+1).length,ns.filter(n=>previous.includes(n)).length];
-  draws.forEach((d,index)=>features(d.numbers,index?draws[index-1].numbers:[]).forEach((v,i)=>{if(index===0&&i===4)return;histograms[i].set(v,(histograms[i].get(v)??0)+1);}));
-  const maxima=histograms.map(h=>Math.max(1,...h.values()));
-  const rated=candidates.map((game,i)=>{
-    const ranks=values.reduce((sum,vs)=>sum+vs.filter(v=>v<=vs[i]+1e-9).length/vs.length,0)/values.length;
-    const history=features(game.numbers).reduce((sum,v,j)=>sum+(histograms[j].get(v)??0)/maxima[j],0)/5;
-    return {...game,rating:INTEGRATED_WEIGHTS.criteria*ranks+INTEGRATED_WEIGHTS.historical*history+INTEGRATED_WEIGHTS.sumCloseness*sumCloseness(game.numbers,profile.meanSum)};
-  });
+  const evidence=evidenceModel(draws);
+  const rated=candidates.map(game=>({...game,...evaluateEvidence(game.numbers,evidence)}));
   const chosen:RecommendedGame[]=[],sourceCounts=new Map<SourceMode,number>();
   const random=rng(seed ^ 0xA17E5EED);
   while(chosen.length<count){
@@ -88,7 +81,7 @@ export function integratedRecommendations(input:Draw[],count:number,seed:number)
     });
     const best=weightedIndex(weights,random);
     const pick=rated.splice(best,1)[0];
-    chosen.push({numbers:pick.numbers,score:pick.rating*100,sources:pick.sources,pattern:{referenceRound:profile.last.round,meanSum:profile.meanSum,sumMin:profile.sumMin,sumMax:profile.sumMax,overlap:pick.numbers.filter(n=>profile.last.numbers.includes(n)),consecutive:consecutivePairs(pick.numbers)}});
+    chosen.push({numbers:pick.numbers,score:pick.rating*100,sources:pick.sources,reasons:pick.reasons,pattern:{referenceRound:profile.last.round,meanSum:profile.meanSum,sumMin:profile.sumMin,sumMax:profile.sumMax,overlap:pick.numbers.filter(n=>profile.last.numbers.includes(n)),consecutive:consecutivePairs(pick.numbers)}});
     pick.sources!.forEach(s=>sourceCounts.set(s,(sourceCounts.get(s)??0)+1));
   }
   return chosen;
