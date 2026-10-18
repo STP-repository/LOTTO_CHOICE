@@ -1,7 +1,10 @@
 import type { Draw } from './data';
 import { frequency } from './statistics';
-export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·합계·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위'} as const;
+import { recent15 } from './data';
+export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·합계·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천'} as const;
 export type Mode=keyof typeof MODES;
+export type BaseMode=Exclude<Mode,'integrated'>;
+export interface RecommendedGame {numbers:number[];score:number|null;sources?:BaseMode[]}
 export const WEIGHTS={all:0.35,recent:0.25,overdue:0.10,balance:0.30};
 export function rng(seed:number) {let s=seed>>>0;return ()=>{s+=0x6D2B79F5;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 export function model(draws:Draw[]) {
@@ -12,14 +15,15 @@ export function model(draws:Draw[]) {
   return {all:norm(all),recent:norm(recent),gap:norm(gap),cold:all.map(n=>(Math.max(...all)+1-n)/(Math.max(...all)+1))};
 }
 export function balanceScore(ns:number[]) {const odd=ns.filter(n=>n%2).length,sum=ns.reduce((a,b)=>a+b,0),groups=new Set(ns.map(n=>Math.floor((n-1)/10))).size;return (Math.max(0,1-Math.abs(odd-3)/3)+Math.max(0,1-Math.abs(sum-138)/117)+groups/5)/3;}
-export function score(ns:number[],m:ReturnType<typeof model>,mode:Mode) {
+export function score(ns:number[],m:ReturnType<typeof model>,mode:BaseMode) {
   const avg=(key:'all'|'recent'|'gap'|'cold')=>ns.reduce((s,n)=>s+m[key][n],0)/6;
   if(mode==='random')return null;
   if(mode==='balanced')return balanceScore(ns)*100;
   if(mode==='composite')return 100*(WEIGHTS.all*avg('all')+WEIGHTS.recent*avg('recent')+WEIGHTS.overdue*avg('gap')+WEIGHTS.balance*balanceScore(ns));
   return 100*avg(mode==='hot'?'all':mode==='cold'?'cold':mode==='recent'?'recent':'all');
 }
-export function recommend(draws:Draw[],mode:Mode,count:number,seed:number) {
+export function recommend(draws:Draw[],mode:Mode,count:number,seed:number):RecommendedGame[] {
+  if(mode==='integrated')return integratedRecommendations(draws,count,seed);
   if(![1,5,10].includes(count))throw new Error('게임 수는 1, 5, 10만 가능합니다.');
   if(!draws.length && mode!=='random')throw new Error('추천에 사용할 데이터가 없습니다.');
   const random=rng(seed),m=model(draws),seen=new Set<string>(); const result:{numbers:number[],score:number|null}[]=[];
@@ -34,4 +38,50 @@ export function recommend(draws:Draw[],mode:Mode,count:number,seed:number) {
     if(!best)throw new Error('고유 조합 생성 실패. 시드를 변경해 주세요.'); seen.add(best.join(','));result.push({numbers:best,score:mode==='random'?null:bestScore});
   }
   return result;
+}
+
+export const INTEGRATED_SOURCES:BaseMode[]=['all','recent','hot','cold','balanced','composite','random'];
+export const INTEGRATED_EVALUATORS:BaseMode[]=['all','recent','cold','balanced','composite'];
+export const INTEGRATED_WEIGHTS={criteria:.65,historical:.35,overlapPenalty:.08,sourcePenalty:.05};
+
+/** All seven candidate sources; identical all/hot scoring is counted only once. */
+export function integratedRecommendations(input:Draw[],count:number,seed:number):RecommendedGame[] {
+  if(count!==5&&count!==10)throw new Error('통합 추천은 5게임 또는 10게임만 가능합니다.');
+  if(!input.length)throw new Error('통합 추천에 사용할 데이터가 없습니다.');
+  // Anchor to the last observed draw, so historical backtests never depend on today's date.
+  const sorted=[...input].sort((a,b)=>a.round-b.round);
+  const draws=recent15(sorted,new Date(`${sorted.at(-1)!.date}T12:00:00+09:00`));
+  const pool=new Map<string,RecommendedGame>();
+  INTEGRATED_SOURCES.forEach((source,i)=>{
+    for(let batch=0;batch<2;batch++)for(const game of recommend(draws,source,10,(seed^Math.imul(i+1,2654435761)^Math.imul(batch+1,1597334677))>>>0)){
+      const key=game.numbers.join(',');const existing=pool.get(key);
+      if(existing){if(!existing.sources!.includes(source))existing.sources!.push(source);}
+      else pool.set(key,{numbers:game.numbers,score:null,sources:[source]});
+    }
+  });
+  const candidates=[...pool.values()],m=model(draws);
+  const values=INTEGRATED_EVALUATORS.map(mode=>candidates.map(c=>score(c.numbers,m,mode)!));
+  const histograms=Array.from({length:4},()=>new Map<number,number>());
+  const features=(ns:number[])=>[ns.filter(n=>n%2).length,Math.floor(ns.reduce((a,b)=>a+b,0)/20),new Set(ns.map(n=>Math.floor((n-1)/10))).size,ns.slice(1).filter((n,i)=>n===ns[i]+1).length];
+  for(const d of draws)features(d.numbers).forEach((v,i)=>histograms[i].set(v,(histograms[i].get(v)??0)+1));
+  const maxima=histograms.map(h=>Math.max(1,...h.values()));
+  const rated=candidates.map((game,i)=>{
+    const ranks=values.reduce((sum,vs)=>sum+vs.filter(v=>v<=vs[i]+1e-9).length/vs.length,0)/values.length;
+    const history=features(game.numbers).reduce((sum,v,j)=>sum+(histograms[j].get(v)??0)/maxima[j],0)/4;
+    return {...game,rating:INTEGRATED_WEIGHTS.criteria*ranks+INTEGRATED_WEIGHTS.historical*history};
+  });
+  const chosen:RecommendedGame[]=[],sourceCounts=new Map<BaseMode,number>();
+  while(chosen.length<count){
+    let best=0,bestValue=-Infinity;
+    rated.forEach((c,i)=>{
+      const overlap=Math.max(0,...chosen.map(g=>g.numbers.filter(n=>c.numbers.includes(n)).length))/6;
+      const sourceUse=Math.min(...c.sources!.map(s=>sourceCounts.get(s)??0));
+      const value=c.rating-INTEGRATED_WEIGHTS.overlapPenalty*overlap-INTEGRATED_WEIGHTS.sourcePenalty*sourceUse;
+      if(value>bestValue){best=i;bestValue=value;}
+    });
+    const pick=rated.splice(best,1)[0];
+    chosen.push({numbers:pick.numbers,score:pick.rating*100,sources:pick.sources});
+    pick.sources!.forEach(s=>sourceCounts.set(s,(sourceCounts.get(s)??0)+1));
+  }
+  return chosen;
 }
