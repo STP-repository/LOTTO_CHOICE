@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CHOICES, combinationFacts } from '../src/core/choices';
 import { MODES } from '../src/core/recommend';
-test('선택 방식은 추천 모드 8개를 중복 없이 연결한다', () => {
+test('선택 방식은 추천 모드 9개를 중복 없이 연결한다', () => {
   assert.deepEqual(CHOICES.map(c => c.mode).sort(), Object.keys(MODES).sort());
 });
 test('번호 설명은 홀짝·합계·끝 구간·연속 쌍을 정확히 계산하고 입력을 보존한다', () => {

@@ -1,10 +1,11 @@
 import type { Draw } from './data';
 import { frequency } from './statistics';
 import { recent15 } from './data';
-export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·합계·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천'} as const;
+import { patternProfile, selectPatternNumbers, consecutivePairs } from './pattern';
+export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·합계·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천',pattern:'15년 패턴 기준'} as const;
 export type Mode=keyof typeof MODES;
-export type BaseMode=Exclude<Mode,'integrated'>;
-export interface RecommendedGame {numbers:number[];score:number|null;sources?:BaseMode[]}
+export type BaseMode=Exclude<Mode,'integrated'|'pattern'>;
+export interface RecommendedGame {numbers:number[];score:number|null;sources?:BaseMode[];pattern?:{referenceRound:number;meanSum:number;sumMin:number;sumMax:number;overlap:number[];consecutive:number}}
 export const WEIGHTS={all:0.35,recent:0.25,overdue:0.10,balance:0.30};
 export function rng(seed:number) {let s=seed>>>0;return ()=>{s+=0x6D2B79F5;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 export function model(draws:Draw[]) {
@@ -26,6 +27,10 @@ export function recommend(draws:Draw[],mode:Mode,count:number,seed:number):Recom
   if(mode==='integrated')return integratedRecommendations(draws,count,seed);
   if(![1,5,10].includes(count))throw new Error('게임 수는 1, 5, 10만 가능합니다.');
   if(!draws.length && mode!=='random')throw new Error('추천에 사용할 데이터가 없습니다.');
+  if(mode==='pattern'){
+    const profile=patternProfile(draws);
+    return selectPatternNumbers(profile,count,rng(seed)).map(g=>({numbers:g.numbers,score:g.rating*100,pattern:{referenceRound:profile.last.round,meanSum:profile.meanSum,sumMin:profile.sumMin,sumMax:profile.sumMax,overlap:g.numbers.filter(n=>profile.last.numbers.includes(n)),consecutive:consecutivePairs(g.numbers)}}));
+  }
   const random=rng(seed),m=model(draws),seen=new Set<string>(); const result:{numbers:number[],score:number|null}[]=[];
   for(let g=0;g<count;g++){
     let best:number[]|undefined,bestScore=-1;
