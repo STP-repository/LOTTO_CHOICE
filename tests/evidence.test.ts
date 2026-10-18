@@ -17,3 +17,5 @@ test('합계가 제외된 9개 근거 지표는 고정 기록에서 빈도·끝�
 });
 
 test('합계 관련 메타데이터를 바꿔도 평가값은 변하지 않는다',()=>{const m=evidenceModel(draws),ns=[1,2,10,20,30,40],before=evaluateEvidence(ns,m);Object.assign(m,{meanSum:999,sumMin:1,sumMax:1});assert.deepEqual(evaluateEvidence(ns,m),before);});
+
+test('통합 비중은 번호 기록 80%·조합 구성 20%이고 보조 네 항목은 각각 5%이다',()=>{assert.ok(Math.abs(FEATURE_WEIGHTS.frequency+FEATURE_WEIGHTS.recent+FEATURE_WEIGHTS.overdue+FEATURE_WEIGHTS.endings+FEATURE_WEIGHTS.pairs-.8)<1e-12);for(const key of ['odd','ranges','consecutive','overlap'] as const)assert.equal(FEATURE_WEIGHTS[key],.05);assert.ok(!('sum' in FEATURE_WEIGHTS));});

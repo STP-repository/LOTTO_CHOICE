@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-10-18T10:30:12.741Z",
+  "dataLastRound": 1246,
+  "comparisonSeed": 42,
+  "combinationsPerDraw": 8145060,
+  "note": "같은 회차·같은 훈련 데이터·5게임을 비교했습니다. 80/20 비중은 결과 확인 전에 정했으며 결과로 재조정하지 않았습니다. 이미 관찰한 과거 기록의 재검증이며 독립적인 미래 검증이나 확률 우위 입증은 아닙니다.",
+  "beforeWeights": {
+    "frequency": 0.13953488372093023,
+    "recent": 0.13953488372093023,
+    "overdue": 0.06976744186046512,
+    "odd": 0.11627906976744186,
+    "ranges": 0.11627906976744186,
+    "endings": 0.09302325581395349,
+    "pairs": 0.11627906976744186,
+    "consecutive": 0.10465116279069768,
+    "overlap": 0.10465116279069768
+  },
+  "afterWeights": {
+    "frequency": 0.2,
+    "recent": 0.2,
+    "overdue": 0.1,
+    "odd": 0.05,
+    "ranges": 0.05,
+    "endings": 0.1,
+    "pairs": 0.2,
+    "consecutive": 0.05,
+    "overlap": 0.05
+  },
+  "results": [
+    {
+      "period": "앞선 100회",
+      "firstRound": 1047,
+      "lastRound": 1146,
+      "rounds": 100,
+      "games": 5,
+      "beforeAverage": 0.7360000000000002,
+      "average": 0.726,
+      "randomAverage": 0.7900000000000001,
+      "noLeakage": true,
+      "elapsedMs": 19253
+    },
+    {
+      "period": "최근 100회",
+      "firstRound": 1147,
+      "lastRound": 1246,
+      "rounds": 100,
+      "games": 5,
+      "beforeAverage": 0.8360000000000001,
+      "average": 0.8699999999999999,
+      "randomAverage": 0.752,
+      "noLeakage": true,
+      "elapsedMs": 17471
+    }
+  ]
+}

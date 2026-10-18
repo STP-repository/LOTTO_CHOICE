@@ -3,9 +3,9 @@ import {frequency} from './statistics';
 import {consecutivePairs} from './pattern';
 
 // Deliberate preference weights, frozen before validation; not learned probabilities.
-export const FEATURE_BASE_WEIGHTS={frequency:12,recent:12,overdue:6,odd:10,ranges:10,endings:8,pairs:10,consecutive:9,overlap:9};
+export const FEATURE_BASE_WEIGHTS={frequency:20,recent:20,overdue:10,odd:5,ranges:5,endings:10,pairs:20,consecutive:5,overlap:5};
 export type FeatureWeights=Record<keyof typeof FEATURE_BASE_WEIGHTS,number>;
-export const FEATURE_WEIGHTS=Object.fromEntries(Object.entries(FEATURE_BASE_WEIGHTS).map(([key,value])=>[key,value/86])) as FeatureWeights;
+export const FEATURE_WEIGHTS=Object.fromEntries(Object.entries(FEATURE_BASE_WEIGHTS).map(([key,value])=>[key,value/100])) as FeatureWeights;
 export function evidenceModel(draws:Draw[]) {
   if(!draws.length)throw new Error('분석할 기록이 없습니다.');
   const counts=frequency(draws),recent=frequency(draws.slice(-100)),gap=Array<number>(46).fill(draws.length);
