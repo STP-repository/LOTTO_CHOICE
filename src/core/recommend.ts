@@ -1,7 +1,7 @@
 import type { Draw } from './data';
 import { frequency } from './statistics';
 import { recent15 } from './data';
-import { patternProfile, selectPatternNumbers, consecutivePairs, matchesPattern, sumCloseness } from './pattern';
+import { patternProfile, selectPatternNumbers, consecutivePairs, matchesPattern, sumCloseness, consecutiveTarget } from './pattern';
 export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·합계·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천',pattern:'15년 패턴 기준'} as const;
 export type Mode=keyof typeof MODES;
 export type BaseMode=Exclude<Mode,'integrated'|'pattern'>;
@@ -80,13 +80,16 @@ export function integratedRecommendations(input:Draw[],count:number,seed:number)
   });
   const chosen:RecommendedGame[]=[],sourceCounts=new Map<SourceMode,number>();
   while(chosen.length<count){
-    let best=0,bestValue=-Infinity;
+    let best=-1,bestValue=-Infinity;
     rated.forEach((c,i)=>{
+      const used=chosen.filter(g=>consecutivePairs(g.numbers)>0).length,target=consecutiveTarget(profile,count),has=consecutivePairs(c.numbers)>0;
+      if((has&&used>=target)||(!has&&chosen.length-used>=count-target))return;
       const overlap=Math.max(0,...chosen.map(g=>g.numbers.filter(n=>c.numbers.includes(n)).length))/6;
       const sourceUse=Math.min(...c.sources!.map(s=>sourceCounts.get(s)??0));
       const value=c.rating-INTEGRATED_WEIGHTS.overlapPenalty*overlap-INTEGRATED_WEIGHTS.sourcePenalty*sourceUse;
       if(value>bestValue){best=i;bestValue=value;}
     });
+    if(best<0)throw new Error('연속번호 유무를 나눠 추천할 후보가 부족합니다.');
     const pick=rated.splice(best,1)[0];
     chosen.push({numbers:pick.numbers,score:pick.rating*100,sources:pick.sources,pattern:{referenceRound:profile.last.round,meanSum:profile.meanSum,sumMin:profile.sumMin,sumMax:profile.sumMax,overlap:pick.numbers.filter(n=>profile.last.numbers.includes(n)),consecutive:consecutivePairs(pick.numbers)}});
     pick.sources!.forEach(s=>sourceCounts.set(s,(sourceCounts.get(s)??0)+1));

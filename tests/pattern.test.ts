@@ -2,12 +2,12 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {recommend} from '../src/core/recommend';
-import {patternProfile,matchesPattern,consecutivePairs,sumCloseness} from '../src/core/pattern';
+import {patternProfile,matchesPattern,consecutivePairs,sumCloseness,consecutiveTarget} from '../src/core/pattern';
 import {backtest} from '../src/core/backtest';
 import type {Dataset} from '../src/core/data';
 const {draws}=JSON.parse(await readFile('public/data/lotto.json','utf8')) as Dataset;
 
-test('패턴 추천의 모든 게임이 첨부된 네 조건을 동시에 충족한다',()=>{
+test('패턴 추천은 연속번호를 강제하지 않고 관측 비율로 나눈다',()=>{
   const profile=patternProfile(draws);
   for(const count of [1,5,10])for(const seed of [42,645,20261018]){
     const result=recommend(draws,'pattern',count,seed);
@@ -15,12 +15,13 @@ test('패턴 추천의 모든 게임이 첨부된 네 조건을 동시에 충족
       assert.ok(matchesPattern(g.numbers,profile));
       const odd=g.numbers.filter(n=>n%2).length,sum=g.numbers.reduce((a,b)=>a+b,0);
       assert.ok(odd>=2&&odd<=4);
-      assert.ok(consecutivePairs(g.numbers)>=1);
+
       assert.ok(g.numbers.some(n=>profile.last.numbers.includes(n)));
       assert.ok(Math.abs(sum-profile.meanSum)<=20);
       assert.deepEqual(g.pattern!.overlap,g.numbers.filter(n=>profile.last.numbers.includes(n)));
       assert.equal(g.pattern!.referenceRound,profile.last.round);
     }
+    assert.equal(result.filter(g=>consecutivePairs(g.numbers)>0).length,consecutiveTarget(profile,count));
     assert.equal(new Set(result.map(g=>g.numbers.join())).size,count);
     assert.deepEqual(result,recommend(draws,'pattern',count,seed));
   }

@@ -32,7 +32,11 @@ export function patternProfile(input: Draw[]) {
 }
 export function matchesPattern(ns: number[], profile: ReturnType<typeof patternProfile>) {
   const odd = ns.filter(n => n % 2).length, sum = ns.reduce((a, b) => a + b, 0);
-  return odd >= 2 && odd <= 4 && sum >= profile.sumMin && sum <= profile.sumMax && consecutivePairs(ns) >= 1 && ns.some(n => profile.last.numbers.includes(n));
+  return odd >= 2 && odd <= 4 && sum >= profile.sumMin && sum <= profile.sumMax && ns.some(n => profile.last.numbers.includes(n));
+}
+export function consecutiveTarget(profile: ReturnType<typeof patternProfile>, count: number) {
+  const observed = profile.consecutive.slice(1).reduce((a, b) => a + b, 0);
+  return Math.round(count * observed / profile.draws.length);
 }
 export function selectPatternNumbers(profile: ReturnType<typeof patternProfile>, count: number, random: () => number) {
   const candidates: { numbers: number[]; rating: number }[] = [], seen = new Set<string>();
@@ -49,13 +53,18 @@ export function selectPatternNumbers(profile: ReturnType<typeof patternProfile>,
   }
   if (candidates.length < count) throw new Error('패턴 조건에 맞는 고유 조합이 부족합니다. 조건을 완화하지 않고 중단했습니다.');
   const result: { numbers: number[]; rating: number }[] = [];
+  const target = consecutiveTarget(profile, count);
   while (result.length < count) {
-    let best = 0, bestValue = -Infinity;
+    let best = -1, bestValue = -Infinity;
     candidates.forEach((c, i) => {
+      const used = result.filter(g => consecutivePairs(g.numbers) > 0).length;
+      const has = consecutivePairs(c.numbers) > 0;
+      if ((has && used >= target) || (!has && result.length - used >= count - target)) return;
       const overlap = Math.max(0, ...result.map(g => g.numbers.filter(n => c.numbers.includes(n)).length));
       const value = c.rating - .08 * overlap / 6;
       if (value > bestValue) { best = i; bestValue = value; }
     });
+    if (best < 0) throw new Error('연속번호 유무를 나눠 추천할 후보가 부족합니다.');
     result.push(candidates.splice(best, 1)[0]);
   }
   return result;

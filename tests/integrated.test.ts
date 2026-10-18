@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {recommend,INTEGRATED_SOURCES,INTEGRATED_EVALUATORS} from '../src/core/recommend';
 import {backtest} from '../src/core/backtest';
-import {patternProfile,matchesPattern} from '../src/core/pattern';
+import {patternProfile,matchesPattern,consecutivePairs,consecutiveTarget} from '../src/core/pattern';
 import type {Dataset} from '../src/core/data';
 const {draws}=JSON.parse(await readFile('public/data/lotto.json','utf8')) as Dataset;
 
@@ -16,6 +16,7 @@ test('통합 추천은 기존 방식과 패턴 후보를 비교해 5·10게임�
     const result=recommend(draws,'integrated',count,42);
     assert.deepEqual(result,recommend(draws,'integrated',count,42));
     assert.equal(result.length,count);
+    assert.equal(result.filter(g=>consecutivePairs(g.numbers)>0).length,consecutiveTarget(patternProfile(draws),count));
     assert.equal(new Set(result.map(g=>g.numbers.join())).size,count);
     for(const g of result){
       assert.ok(matchesPattern(g.numbers,patternProfile(draws)));
