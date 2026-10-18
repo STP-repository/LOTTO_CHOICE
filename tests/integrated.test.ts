@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {recommend,INTEGRATED_SOURCES,INTEGRATED_EVALUATORS} from '../src/core/recommend';
 import {backtest} from '../src/core/backtest';
+import {patternProfile,matchesPattern} from '../src/core/pattern';
 import type {Dataset} from '../src/core/data';
 const {draws}=JSON.parse(await readFile('public/data/lotto.json','utf8')) as Dataset;
 
-test('통합 추천은 7방식 후보를 비교해 5·10게임을 중복 없이 재현한다',()=>{
-  assert.equal(INTEGRATED_SOURCES.length,7);
+test('통합 추천은 기존 방식과 패턴 후보를 비교해 5·10게임을 중복 없이 재현한다',()=>{
+  assert.equal(INTEGRATED_SOURCES.length,8);
   assert.ok(INTEGRATED_SOURCES.includes('random'));
+  assert.ok(INTEGRATED_SOURCES.includes('pattern'));
   assert.ok(!INTEGRATED_EVALUATORS.includes('hot'));
   for(const count of [5,10]){
     const result=recommend(draws,'integrated',count,42);
@@ -16,6 +18,8 @@ test('통합 추천은 7방식 후보를 비교해 5·10게임을 중복 없이 
     assert.equal(result.length,count);
     assert.equal(new Set(result.map(g=>g.numbers.join())).size,count);
     for(const g of result){
+      assert.ok(matchesPattern(g.numbers,patternProfile(draws)));
+      assert.ok(g.pattern?.overlap.length);
       assert.equal(new Set(g.numbers).size,6);
       assert.ok(g.numbers.every(n=>n>=1&&n<=45));
       assert.deepEqual(g.numbers,[...g.numbers].sort((a,b)=>a-b));
