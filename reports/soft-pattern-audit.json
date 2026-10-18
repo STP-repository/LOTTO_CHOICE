@@ -1,0 +1,29 @@
+{
+  "note": "Patterns are preferences, not constraints; these runs do not establish predictive advantage.",
+  "results": [
+    {
+      "seed": 42,
+      "rounds": 100,
+      "games": 5,
+      "average": 0.8159999999999996,
+      "randomAverage": 0.752,
+      "noLeakage": true
+    },
+    {
+      "seed": 645,
+      "rounds": 100,
+      "games": 5,
+      "average": 0.8019999999999999,
+      "randomAverage": 0.8219999999999997,
+      "noLeakage": true
+    },
+    {
+      "seed": 20261018,
+      "rounds": 100,
+      "games": 5,
+      "average": 0.7660000000000001,
+      "randomAverage": 0.7239999999999999,
+      "noLeakage": true
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import type { Mode } from './recommend';
 
 export const METHOD_DETAILS: { mode: Mode; icon: string; title: string; description: string }[] = [
   { mode: 'integrated', icon: '◎', title: '15년 통합 추천', description: '15년 빈도·조합 균형·패턴을 함께 비교하고, 평균 합계 약 138에 가까운 조합을 선호해 5게임·10게임을 골라요.' },
-  { mode: 'pattern', icon: '◈', title: '15년 패턴 기준', description: '홀짝·직전 중복·평균 합계를 참고하고, 연속번호가 있는 조합과 없는 조합을 나눠 골라요.' },
+  { mode: 'pattern', icon: '◈', title: '15년 패턴 기준', description: '홀짝·연속번호·직전 중복·평균 합계를 참고하되 특정 구성을 강제하지 않아요.' },
   { mode: 'composite', icon: '✧', title: '골고루 섞기', description: '전체 기록, 최근 흐름, 조합 균형을 함께 참고해요.' },
   { mode: 'balanced', icon: '◐', title: '균형 있게 고르기', description: '홀짝과 합계, 번호 구간이 골고루 섞이도록 골라요.' },
   { mode: 'recent', icon: '↗', title: '최근 기록 참고하기', description: '최근 100회에서 자주 나온 번호를 더 참고해요.' },

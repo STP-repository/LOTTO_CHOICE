@@ -1,7 +1,7 @@
 import type { Draw } from './data';
 import { frequency } from './statistics';
 import { recent15 } from './data';
-import { patternProfile, selectPatternNumbers, consecutivePairs, matchesPattern, sumCloseness, consecutiveTarget } from './pattern';
+import { patternProfile, selectPatternNumbers, consecutivePairs, sumCloseness, weightedIndex } from './pattern';
 export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·합계·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천',pattern:'15년 패턴 기준'} as const;
 export type Mode=keyof typeof MODES;
 export type BaseMode=Exclude<Mode,'integrated'|'pattern'>;
@@ -50,7 +50,7 @@ export const INTEGRATED_SOURCES:SourceMode[]=['all','recent','hot','cold','balan
 export const INTEGRATED_EVALUATORS:BaseMode[]=['all','recent','cold','balanced','composite'];
 export const INTEGRATED_WEIGHTS={criteria:.45,historical:.25,sumCloseness:.30,overlapPenalty:.08,sourcePenalty:.05};
 
-/** Eight sources, mandatory observed-pattern rules, then comparison and diversity selection. */
+/** Historical features are soft preferences; no pattern filter or fixed allocation. */
 export function integratedRecommendations(input:Draw[],count:number,seed:number):RecommendedGame[] {
   if(count!==5&&count!==10)throw new Error('통합 추천은 5게임 또는 10게임만 가능합니다.');
   if(!input.length)throw new Error('통합 추천에 사용할 데이터가 없습니다.');
@@ -66,8 +66,8 @@ export function integratedRecommendations(input:Draw[],count:number,seed:number)
     }
   });
   const profile=patternProfile(draws);
-  const candidates=[...pool.values()].filter(g=>matchesPattern(g.numbers,profile)),m=model(draws);
-  if(candidates.length<count)throw new Error('통합 패턴 조건을 만족하는 후보가 부족합니다. 조건을 완화하지 않고 중단했습니다.');
+  const candidates=[...pool.values()],m=model(draws);
+  if(candidates.length<count)throw new Error('중복 제거 후 고유 후보가 부족합니다.');
   const values=INTEGRATED_EVALUATORS.map(mode=>candidates.map(c=>score(c.numbers,m,mode)!));
   const histograms=Array.from({length:5},()=>new Map<number,number>());
   const features=(ns:number[],previous:number[]=profile.last.numbers)=>[ns.filter(n=>n%2).length,Math.floor(ns.reduce((a,b)=>a+b,0)/20),new Set(ns.map(n=>Math.floor((n-1)/10))).size,ns.slice(1).filter((n,i)=>n===ns[i]+1).length,ns.filter(n=>previous.includes(n)).length];
@@ -79,17 +79,14 @@ export function integratedRecommendations(input:Draw[],count:number,seed:number)
     return {...game,rating:INTEGRATED_WEIGHTS.criteria*ranks+INTEGRATED_WEIGHTS.historical*history+INTEGRATED_WEIGHTS.sumCloseness*sumCloseness(game.numbers,profile.meanSum)};
   });
   const chosen:RecommendedGame[]=[],sourceCounts=new Map<SourceMode,number>();
+  const random=rng(seed ^ 0xA17E5EED);
   while(chosen.length<count){
-    let best=-1,bestValue=-Infinity;
-    rated.forEach((c,i)=>{
-      const used=chosen.filter(g=>consecutivePairs(g.numbers)>0).length,target=consecutiveTarget(profile,count),has=consecutivePairs(c.numbers)>0;
-      if((has&&used>=target)||(!has&&chosen.length-used>=count-target))return;
+    const weights=rated.map(c=>{
       const overlap=Math.max(0,...chosen.map(g=>g.numbers.filter(n=>c.numbers.includes(n)).length))/6;
       const sourceUse=Math.min(...c.sources!.map(s=>sourceCounts.get(s)??0));
-      const value=c.rating-INTEGRATED_WEIGHTS.overlapPenalty*overlap-INTEGRATED_WEIGHTS.sourcePenalty*sourceUse;
-      if(value>bestValue){best=i;bestValue=value;}
+      return Math.max(.1,.5+c.rating-INTEGRATED_WEIGHTS.overlapPenalty*overlap-INTEGRATED_WEIGHTS.sourcePenalty*sourceUse);
     });
-    if(best<0)throw new Error('연속번호 유무를 나눠 추천할 후보가 부족합니다.');
+    const best=weightedIndex(weights,random);
     const pick=rated.splice(best,1)[0];
     chosen.push({numbers:pick.numbers,score:pick.rating*100,sources:pick.sources,pattern:{referenceRound:profile.last.round,meanSum:profile.meanSum,sumMin:profile.sumMin,sumMax:profile.sumMax,overlap:pick.numbers.filter(n=>profile.last.numbers.includes(n)),consecutive:consecutivePairs(pick.numbers)}});
     pick.sources!.forEach(s=>sourceCounts.set(s,(sourceCounts.get(s)??0)+1));
