@@ -1,6 +1,10 @@
 import { recent15, type Draw } from './data';
 
 export const PATTERN_SUM_TOLERANCE = 20;
+/** Preference around the observed mean, not a probability estimate. */
+export function sumCloseness(ns: number[], meanSum: number) {
+  return Math.max(0, 1 - Math.abs(ns.reduce((a, b) => a + b, 0) - meanSum) / PATTERN_SUM_TOLERANCE);
+}
 export function consecutivePairs(ns: number[]) {
   const sorted = [...ns].sort((a, b) => a - b);
   return sorted.slice(1).filter((n, i) => n === sorted[i] + 1).length;
@@ -39,8 +43,8 @@ export function selectPatternNumbers(profile: ReturnType<typeof patternProfile>,
     if (seen.has(key) || !matchesPattern(ns, profile)) continue;
     seen.add(key);
     const odd = ns.filter(n => n % 2).length, c = consecutivePairs(ns), overlap = ns.filter(n => profile.last.numbers.includes(n)).length;
-    const sumCloseness = 1 - Math.abs(ns.reduce((a, b) => a + b, 0) - profile.meanSum) / PATTERN_SUM_TOLERANCE;
-    const rating = (profile.odd[odd] / Math.max(1, ...profile.odd) + profile.consecutive[c] / Math.max(1, ...profile.consecutive) + profile.overlaps[overlap] / Math.max(1, ...profile.overlaps) + sumCloseness) / 4;
+    const history = (profile.odd[odd] / Math.max(1, ...profile.odd) + profile.consecutive[c] / Math.max(1, ...profile.consecutive) + profile.overlaps[overlap] / Math.max(1, ...profile.overlaps)) / 3;
+    const rating = .6 * history + .4 * sumCloseness(ns, profile.meanSum);
     candidates.push({ numbers: ns, rating });
   }
   if (candidates.length < count) throw new Error('패턴 조건에 맞는 고유 조합이 부족합니다. 조건을 완화하지 않고 중단했습니다.');

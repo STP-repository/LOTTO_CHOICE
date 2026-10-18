@@ -1,7 +1,7 @@
 import type { Draw } from './data';
 import { frequency } from './statistics';
 import { recent15 } from './data';
-import { patternProfile, selectPatternNumbers, consecutivePairs, matchesPattern } from './pattern';
+import { patternProfile, selectPatternNumbers, consecutivePairs, matchesPattern, sumCloseness } from './pattern';
 export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·합계·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천',pattern:'15년 패턴 기준'} as const;
 export type Mode=keyof typeof MODES;
 export type BaseMode=Exclude<Mode,'integrated'|'pattern'>;
@@ -48,7 +48,7 @@ export function recommend(draws:Draw[],mode:Mode,count:number,seed:number):Recom
 
 export const INTEGRATED_SOURCES:SourceMode[]=['all','recent','hot','cold','balanced','composite','random','pattern'];
 export const INTEGRATED_EVALUATORS:BaseMode[]=['all','recent','cold','balanced','composite'];
-export const INTEGRATED_WEIGHTS={criteria:.65,historical:.35,overlapPenalty:.08,sourcePenalty:.05};
+export const INTEGRATED_WEIGHTS={criteria:.45,historical:.25,sumCloseness:.30,overlapPenalty:.08,sourcePenalty:.05};
 
 /** Eight sources, mandatory observed-pattern rules, then comparison and diversity selection. */
 export function integratedRecommendations(input:Draw[],count:number,seed:number):RecommendedGame[] {
@@ -76,7 +76,7 @@ export function integratedRecommendations(input:Draw[],count:number,seed:number)
   const rated=candidates.map((game,i)=>{
     const ranks=values.reduce((sum,vs)=>sum+vs.filter(v=>v<=vs[i]+1e-9).length/vs.length,0)/values.length;
     const history=features(game.numbers).reduce((sum,v,j)=>sum+(histograms[j].get(v)??0)/maxima[j],0)/5;
-    return {...game,rating:INTEGRATED_WEIGHTS.criteria*ranks+INTEGRATED_WEIGHTS.historical*history};
+    return {...game,rating:INTEGRATED_WEIGHTS.criteria*ranks+INTEGRATED_WEIGHTS.historical*history+INTEGRATED_WEIGHTS.sumCloseness*sumCloseness(game.numbers,profile.meanSum)};
   });
   const chosen:RecommendedGame[]=[],sourceCounts=new Map<SourceMode,number>();
   while(chosen.length<count){

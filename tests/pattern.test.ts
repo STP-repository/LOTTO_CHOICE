@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {recommend} from '../src/core/recommend';
-import {patternProfile,matchesPattern,consecutivePairs} from '../src/core/pattern';
+import {patternProfile,matchesPattern,consecutivePairs,sumCloseness} from '../src/core/pattern';
 import {backtest} from '../src/core/backtest';
 import type {Dataset} from '../src/core/data';
 const {draws}=JSON.parse(await readFile('public/data/lotto.json','utf8')) as Dataset;
@@ -38,4 +38,11 @@ test('패턴 동시 충족 집계는 실제 직전 회차를 비교하며 백테
   const a=backtest(subset,'pattern',42,5),b=backtest(changed,'pattern',42,5);
   assert.deepEqual(a.rows.at(-1)!.predicted,b.rows.at(-1)!.predicted);
   assert.ok(a.rows.every(r=>r.trainingLast<r.round));
+});
+
+test('평균 합계 근접도는 관측 평균에 가까운 합계를 우선한다',()=>{
+  const mean=138.6;
+  assert.ok(sumCloseness([10,11,20,25,30,43],mean)>sumCloseness([1,2,20,25,30,43],mean));
+  assert.equal(sumCloseness([1,2,3,4,5,6],mean),0);
+  assert.equal(sumCloseness([10,11,20,25,30,42],138),1);
 });

@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CHOICES, combinationFacts } from '../src/core/choices';
+import { CHOICES, METHOD_DETAILS, combinationFacts } from '../src/core/choices';
 import { MODES } from '../src/core/recommend';
-test('선택 방식은 추천 모드 9개를 중복 없이 연결한다', () => {
-  assert.deepEqual(CHOICES.map(c => c.mode).sort(), Object.keys(MODES).sort());
+test('선택지는 세 가지로 줄이고 내부 후보 방식은 보존한다', () => {
+  assert.deepEqual(CHOICES.map(c => c.mode), ['integrated','recent','random']);
+  assert.deepEqual(METHOD_DETAILS.map(c => c.mode).sort(), Object.keys(MODES).sort());
 });
 test('번호 설명은 홀짝·합계·끝 구간·연속 쌍을 정확히 계산하고 입력을 보존한다', () => {
   const ns = [45, 21, 11, 3, 2, 1];
