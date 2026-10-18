@@ -1,13 +1,14 @@
+import { rankAllCombinations } from './ranking';
 import { evidenceModel, evaluateEvidence } from './evidence';
 import type { Draw } from './data';
 import { frequency } from './statistics';
 import { recent15 } from './data';
-import { patternProfile, selectPatternNumbers, consecutivePairs, sumCloseness, weightedIndex } from './pattern';
+import { patternProfile, selectPatternNumbers, consecutivePairs } from './pattern';
 export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·합계·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천',pattern:'15년 패턴 기준'} as const;
 export type Mode=keyof typeof MODES;
 export type BaseMode=Exclude<Mode,'integrated'|'pattern'>;
 export type SourceMode=Exclude<Mode,'integrated'>;
-export interface RecommendedGame {numbers:number[];score:number|null;sources?:SourceMode[];reasons?:string[];pattern?:{referenceRound:number;meanSum:number;sumMin:number;sumMax:number;overlap:number[];consecutive:number}}
+export interface RecommendedGame {numbers:number[];score:number|null;sources?:SourceMode[];reasons?:string[];rank?:number;pattern?:{referenceRound:number;meanSum:number;sumMin:number;sumMax:number;overlap:number[];consecutive:number}}
 export const WEIGHTS={all:0.35,recent:0.25,overdue:0.10,balance:0.30};
 export function rng(seed:number) {let s=seed>>>0;return ()=>{s+=0x6D2B79F5;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 export function model(draws:Draw[]) {
@@ -47,42 +48,21 @@ export function recommend(draws:Draw[],mode:Mode,count:number,seed:number):Recom
   return result;
 }
 
-export const INTEGRATED_SOURCES:SourceMode[]=['all','recent','hot','cold','balanced','composite','random','pattern'];
-export const INTEGRATED_EVALUATORS:BaseMode[]=['all','recent','cold','balanced','composite'];
-export const INTEGRATED_WEIGHTS={overlapPenalty:.08,sourcePenalty:.05};
-
-/** Historical features are soft preferences; no pattern filter or fixed allocation. */
-export function integratedRecommendations(input:Draw[],count:number,seed:number):RecommendedGame[] {
+const rankingCache=new Map<string,RecommendedGame[]>();
+/** Highest analysis scores over all 8,145,060 combinations. Seed is intentionally irrelevant. */
+export function integratedRecommendations(input:Draw[],count:number,_seed:number,onProgress?:(checked:number,total:number)=>void):RecommendedGame[] {
   if(count!==5&&count!==10)throw new Error('통합 추천은 5게임 또는 10게임만 가능합니다.');
   if(!input.length)throw new Error('통합 추천에 사용할 데이터가 없습니다.');
-  // Anchor to the last observed draw, so historical backtests never depend on today's date.
   const sorted=[...input].sort((a,b)=>a.round-b.round);
   const draws=recent15(sorted,new Date(`${sorted.at(-1)!.date}T12:00:00+09:00`));
-  const pool=new Map<string,RecommendedGame>();
-  INTEGRATED_SOURCES.forEach((source,i)=>{
-    for(let batch=0;batch<2;batch++)for(const game of recommend(draws,source,10,(seed^Math.imul(i+1,2654435761)^Math.imul(batch+1,1597334677))>>>0)){
-      const key=game.numbers.join(',');const existing=pool.get(key);
-      if(existing){if(!existing.sources!.includes(source))existing.sources!.push(source);}
-      else pool.set(key,{numbers:game.numbers,score:null,sources:[source]});
-    }
-  });
-  const profile=patternProfile(draws);
-  const candidates=[...pool.values()];
-  if(candidates.length<count)throw new Error('중복 제거 후 고유 후보가 부족합니다.');
-  const evidence=evidenceModel(draws);
-  const rated=candidates.map(game=>({...game,...evaluateEvidence(game.numbers,evidence)}));
-  const chosen:RecommendedGame[]=[],sourceCounts=new Map<SourceMode,number>();
-  const random=rng(seed ^ 0xA17E5EED);
-  while(chosen.length<count){
-    const weights=rated.map(c=>{
-      const overlap=Math.max(0,...chosen.map(g=>g.numbers.filter(n=>c.numbers.includes(n)).length))/6;
-      const sourceUse=Math.min(...c.sources!.map(s=>sourceCounts.get(s)??0));
-      return Math.max(.1,.5+c.rating-INTEGRATED_WEIGHTS.overlapPenalty*overlap-INTEGRATED_WEIGHTS.sourcePenalty*sourceUse);
-    });
-    const best=weightedIndex(weights,random);
-    const pick=rated.splice(best,1)[0];
-    chosen.push({numbers:pick.numbers,score:pick.rating*100,sources:pick.sources,reasons:pick.reasons,pattern:{referenceRound:profile.last.round,meanSum:profile.meanSum,sumMin:profile.sumMin,sumMax:profile.sumMax,overlap:pick.numbers.filter(n=>profile.last.numbers.includes(n)),consecutive:consecutivePairs(pick.numbers)}});
-    pick.sources!.forEach(s=>sourceCounts.set(s,(sourceCounts.get(s)??0)+1));
-  }
-  return chosen;
+  const key=JSON.stringify(draws);
+  let ranked=rankingCache.get(key);
+  if(!ranked){
+    const evidence=evidenceModel(draws),profile=patternProfile(draws);
+    const {top}=rankAllCombinations(evidence,10,45,onProgress);
+    ranked=top.map((g,i)=>({numbers:g.numbers,rank:i+1,score:evaluateEvidence(g.numbers,evidence).rating*100,reasons:evaluateEvidence(g.numbers,evidence).reasons,pattern:{referenceRound:profile.last.round,meanSum:profile.meanSum,sumMin:profile.sumMin,sumMax:profile.sumMax,overlap:g.numbers.filter(n=>profile.last.numbers.includes(n)),consecutive:consecutivePairs(g.numbers)}}));
+    if(rankingCache.size>=3)rankingCache.delete(rankingCache.keys().next().value!);
+    rankingCache.set(key,ranked);
+  }else onProgress?.(8_145_060,8_145_060);
+  return structuredClone(ranked.slice(0,count));
 }
