@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CHOICES, METHOD_DETAILS, combinationFacts } from '../src/core/choices';
 import { MODES } from '../src/core/recommend';
-test('선택지는 세 가지로 줄이고 내부 후보 방식은 보존한다', () => {
-  assert.deepEqual(CHOICES.map(c => c.mode), ['integrated','recent','random']);
+test('선택지는 통합과 무작위 두 가지로 줄이고 내부 후보 방식은 보존한다', () => {
+  assert.deepEqual(CHOICES.map(c => c.mode), ['integrated','random']);
   assert.deepEqual(METHOD_DETAILS.map(c => c.mode).sort(), Object.keys(MODES).sort());
 });
 test('번호 설명은 홀짝·합계·끝 구간·연속 쌍을 정확히 계산하고 입력을 보존한다', () => {

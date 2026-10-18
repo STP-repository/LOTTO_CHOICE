@@ -13,7 +13,7 @@ export const METHOD_DETAILS: { mode: Mode; icon: string; title: string; descript
 ];
 
 // Similar historical methods remain inside the integrated candidate pool.
-export const CHOICES = METHOD_DETAILS.filter(c => ['integrated', 'recent', 'random'].includes(c.mode));
+export const CHOICES = METHOD_DETAILS.filter(c => ['integrated', 'random'].includes(c.mode));
 
 export function combinationFacts(numbers: number[]) {
   const sorted = [...numbers].sort((a, b) => a - b);
