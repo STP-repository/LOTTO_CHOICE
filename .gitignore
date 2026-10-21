@@ -7,3 +7,6 @@ data/*.tmp
 .pages-*/
 
 reports/advanced-validation.json
+
+admin-service/
+defense-online/
