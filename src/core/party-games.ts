@@ -8,19 +8,20 @@ export function makeLadder(count:number,seed:number){
   const paths=Array.from({length:count},(_,start)=>{let lane=start;const steps=[lane];bars.forEach(b=>{if(lane===b.col)lane++;else if(lane===b.col+1)lane--;steps.push(lane);});return {start,end:lane,steps};});
   const target=Math.floor(random()*count);return {bars,paths,target,winner:paths.find(p=>p.end===target)!.start};
 }
-export interface BallPoint {x:number;y:number;finished:boolean}
+export interface BallPoint {x:number;y:number;finished:boolean;stage:number}
 export const PEGS=Array.from({length:6},(_,row)=>Array.from({length:row%2?4:5},(_,col)=>({x:(row%2?90:50)+col*80,y:100+row*60}))).flat();
-export function simulatePinball(count:number,seed:number){
-  const random=rng(seed),dt=1/120,balls=Array.from({length:count},()=>({x:30+random()*360,y:20+random()*35,vx:(random()-.5)*130,vy:0,finished:false})),frames:BallPoint[][]=[],arrivals:{id:number;time:number}[]=[];
-  for(let step=0;step<2400;step++){
+export function simulatePinball(count:number,seed:number,stages=1){
+  if(![1,3,5].includes(stages))throw new Error('핀볼 코스는 1·3·5단계만 가능합니다.');
+  const random=rng(seed),dt=1/120,balls=Array.from({length:count},()=>({x:30+random()*360,y:20+random()*35,vx:(random()-.5)*130,vy:0,finished:false,stage:0})),frames:BallPoint[][]=[],arrivals:{id:number;time:number}[]=[];
+  for(let step=0;step<2400*stages;step++){
     for(let id=0;id<count;id++){const b=balls[id];if(b.finished)continue;const oldY=b.y;
       b.vy+=760*dt;b.vx+=Math.sin(step*.05+id)*20*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;
       if(b.x<13){b.x=13;b.vx=Math.abs(b.vx)*.8;}if(b.x>407){b.x=407;b.vx=-Math.abs(b.vx)*.8;}
       for(const peg of PEGS){const dx=b.x-peg.x,dy=b.y-peg.y,dist=Math.hypot(dx,dy);if(dist<19){const nx=dist?dx/dist:.1,ny=dist?dy/dist:-1;b.x=peg.x+nx*19;b.y=peg.y+ny*19;const dot=b.vx*nx+b.vy*ny;if(dot<0){b.vx-=1.76*dot*nx;b.vy-=1.76*dot*ny;}if(Math.abs(b.vx)<12)b.vx+=(id%2?1:-1)*18;}}
-      if(b.y>=530){const fraction=Math.max(0,Math.min(1,(530-oldY)/Math.max(.001,b.y-oldY)));b.finished=true;b.y=530;arrivals.push({id,time:step*dt+fraction*dt});}
+      if(b.y>=530){if(b.stage<stages-1){b.stage++;b.x=30+random()*360;b.y=30;b.vx=(random()-.5)*170;b.vy=0;}else{const fraction=Math.max(0,Math.min(1,(530-oldY)/Math.max(.001,b.y-oldY)));b.finished=true;b.y=530;arrivals.push({id,time:step*dt+fraction*dt});}}
     }
-    if(step%4===0)frames.push(balls.map(b=>({x:b.x,y:b.y,finished:b.finished})));
-    if(arrivals.length===count){frames.push(balls.map(b=>({x:b.x,y:b.y,finished:b.finished})));break;}
+    if(step%4===0)frames.push(balls.map(b=>({x:b.x,y:b.y,finished:b.finished,stage:b.stage})));
+    if(arrivals.length===count){frames.push(balls.map(b=>({x:b.x,y:b.y,finished:b.finished,stage:b.stage})));break;}
   }
   if(arrivals.length!==count)throw new Error('모든 공이 도착하지 못했습니다. 다시 시작해 주세요.');
   arrivals.sort((a,b)=>a.time-b.time||a.id-b.id);return {frames,arrivals,winner:arrivals.at(-1)!.id};

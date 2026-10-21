@@ -27,3 +27,8 @@ test('경주·주사위·토너먼트는 각 게임 규칙의 승자와 시드 �
   }
   assert.deepEqual(simulateRace(7,42),simulateRace(7,42));assert.deepEqual(diceTournament(7,42),diceTournament(7,42));assert.deepEqual(knockout(7,42),knockout(7,42));
 });
+test('3·5단계 핀볼은 실제 코스를 반복 통과하고 마지막 도착자가 당첨된다',()=>{
+  for(const stages of [3,5])for(const count of [2,8,20])for(const seed of [1,7,42,99]){
+    const p=simulatePinball(count,seed,stages);assert.equal(p.arrivals.length,count);assert.ok(p.frames.at(-1)!.every(b=>b.finished&&b.stage===stages-1));assert.equal(p.winner,p.arrivals.at(-1)!.id);assert.ok(p.frames.some(frame=>frame.some(b=>b.stage>0&&!b.finished)));
+  }
+});
