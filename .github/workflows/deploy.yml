@@ -39,6 +39,8 @@ jobs:
           fi
       - name: Validate weights and prepare recommendations automatically
         run: npx tsx scripts/publish-advanced.ts
+      - name: Precompute ranked recommendations for instant public display
+        run: npx tsx scripts/publish-ranked.ts
       - name: Type check
         run: npm run typecheck
       - name: Tests

@@ -10180,11 +10180,9 @@
       "bonus": 6
     }
   ],
-  "source": "공개 미러 (공식 미검증)",
-  "sourceUrl": "https://smok95.github.io/lotto/results/all.json",
-  "updatedAt": "2026-10-21T05:34:15.113Z",
-  "verified": false,
-  "notes": [
-    "https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=all: fetch failed"
-  ]
+  "source": "동행복권 공식",
+  "sourceUrl": "https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=all",
+  "updatedAt": "2026-10-21T05:15:07.104Z",
+  "verified": true,
+  "notes": []
 }

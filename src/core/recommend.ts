@@ -62,10 +62,10 @@ export function integratedRecommendations(input:Draw[],count:number,_seed:number
  if(count!==5&&count!==10)throw new Error('통합 추천은 5게임 또는 10게임만 가능합니다.');
  return rankedRecommendations(input,'integrated',count,onProgress);
 }
-export function rankedRecommendations(input:Draw[],mode:Mode,count:number,onProgress?:(checked:number,total:number)=>void):RecommendedGame[] {
+export function rankedRecommendations(input:Draw[],mode:Mode,count:number,onProgress?:(checked:number,total:number)=>void,scope:'recent15'|'all'='recent15'):RecommendedGame[] {
  if(![1,5,10].includes(count))throw new Error('게임 수는 1, 5, 10만 가능합니다.');
  if(!input.length)throw new Error('추천에 사용할 데이터가 없습니다.');
- const sorted=[...input].sort((a,b)=>a.round-b.round),draws=recent15(sorted,new Date(`${sorted.at(-1)!.date}T12:00:00+09:00`));
+ const sorted=[...input].sort((a,b)=>a.round-b.round),draws=scope==='all'?sorted:recent15(sorted,new Date(`${sorted.at(-1)!.date}T12:00:00+09:00`));
  const key=mode+JSON.stringify(draws);let ranked=rankingCache.get(key);
  if(!ranked){
   const evidence=evidenceModel(draws),profile=patternProfile(draws),weights=modeWeights(mode),{top}=rankAllCombinations(evidence,10,45,onProgress,weights);

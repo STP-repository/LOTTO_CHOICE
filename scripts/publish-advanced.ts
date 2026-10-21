@@ -1,5 +1,5 @@
 import {readFile,writeFile,rename} from 'node:fs/promises';
-import {validateDraws,type Dataset} from '../src/core/data';
+import {validateDraws,recent15,type Dataset} from '../src/core/data';
 import {validateAdvanced} from '../src/core/advanced-validation';
 import {advancedGenerate,dataSignature} from '../src/core/advanced-model';
 const data=JSON.parse(await readFile('public/data/full-history.json','utf8')) as Dataset;
@@ -7,9 +7,10 @@ if(!data.verified)throw new Error('공식 전체 이력 없이 자동 검증 결
 validateDraws(data.draws);const asOf=new Date(),budget=2000,seed=20261021;
 const report=validateAdvanced(data.draws,budget,seed,asOf,p=>{if(p.done%50===0)console.log(`${p.phase} ${p.done}/${p.total}`);});
 const result=advancedGenerate(data.draws,budget,seed,report.finalWeights);
+const recentResult=advancedGenerate(recent15(data.draws,asOf),budget,seed,report.finalWeights);
 await writeFile('reports/advanced-validation.json',JSON.stringify({source:data.source,report,result}));
 const summary={...report,rows:[],recordMode:'summary'};
-await writeFile('public/data/advanced-result.json.tmp',JSON.stringify({signature:dataSignature(data.draws),report:summary,result}));
+await writeFile('public/data/advanced-result.json.tmp',JSON.stringify({signature:dataSignature(data.draws),report:summary,result,recentResult}));
 await rename('public/data/advanced-result.json.tmp','public/data/advanced-result.json');
 await writeFile('reports/advanced-summary.json',JSON.stringify({asOf:report.asOf,source:data.source,budget,seed,split:report.split,models:report.models.length,executions:report.executions,modelExecutions:report.modelExecutions,applied:report.applied,reason:report.reason,weights:report.finalWeights,finalAverage:report.holdout.base.average,randomAverage:report.holdout.random.average},null,2));
 console.log(`사전 검증 완료: ${report.executions}회차 · ${report.models.length}모델 · ${report.reason}`);

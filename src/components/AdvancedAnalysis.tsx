@@ -1,47 +1,32 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { expectedRound, validateDraws, type Dataset } from '../core/data';
-import { BASE_WEIGHTS, FACTORS, LABELS, advancedGenerate, analysisSplit, overlap, dataSignature } from '../core/advanced-model';
-import type { ValidationReport } from '../core/advanced-validation';
-import { Balls } from './Charts';
-
+import {useEffect,useMemo,useState} from 'react';
+import {expectedRound,validateDraws,recent15,type Dataset} from '../core/data';
+import {BASE_WEIGHTS,FACTORS,LABELS,analysisSplit,overlap,dataSignature,type advancedGenerate} from '../core/advanced-model';
+import type {ValidationReport} from '../core/advanced-validation';
+import {Balls} from './Charts';
 type Generated=ReturnType<typeof advancedGenerate>;
 const f=(n:number,d=3)=>Number.isFinite(n)?n.toFixed(d):'—';
 function exportJson(value:unknown){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='lotto-integrated-validation.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-export default function AdvancedAnalysis({fallback}:{fallback:Dataset|null}){
+export default function AdvancedAnalysis({fallback:_fallback,scope='all'}:{fallback:Dataset|null;scope?:'recent15'|'all'}){
   const [data,setData]=useState<Dataset|null>(null),[loading,setLoading]=useState(true),[loadNote,setLoadNote]=useState(''),[error,setError]=useState('');
-  const [budget,setBudget]=useState(2000),[seed,setSeed]=useState(20261021),[busy,setBusy]=useState(false),[progress,setProgress]=useState({phase:'',done:0,total:1});
-  const [result,setResult]=useState<Generated|null>(null),[report,setReport]=useState<ValidationReport|null>(null),[copyNote,setCopyNote]=useState('');
-  const [asOf,setAsOf]=useState(()=>new Date().toISOString()),[revision,setRevision]=useState(0);
-  const worker=useRef<Worker|null>(null),active=useRef(false);
-  useEffect(()=>{if(!data?.verified)return;let alive=true;fetch(`${import.meta.env.BASE_URL}data/advanced-result.json?t=${Date.now()}`,{cache:'no-store'}).then(async r=>{if(!r.ok)return;const cached=await r.json();if(!alive||active.current||cached.signature!==dataSignature(data.draws)||cached.report.version!=='advanced-v1')return;setAsOf(cached.report.asOf);setBudget(cached.report.budget);setSeed(cached.report.seed);setReport(cached.report);setResult(cached.result);}).catch(()=>{});return()=>{alive=false;};},[data]);
-  useEffect(()=>{let alive=true;setLoading(true);setError('');setReport(null);setResult(null);worker.current?.terminate();worker.current=null;active.current=false;setBusy(false);setAsOf(new Date().toISOString());
-    fetch(`${import.meta.env.BASE_URL}data/full-history.json?t=${Date.now()}`,{cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('전체 이력 파일을 불러오지 못했습니다.');const d=await r.json() as Dataset;d.draws=validateDraws(d.draws);if(d.draws[0].round!==1)throw new Error('제1회부터의 전체 이력이 아닙니다.');if(alive){setData(d);setLoadNote(d.draws.at(-1)!.round<expectedRound()?'전체 이력이 최신 예상 회차보다 뒤처져 있습니다. 새 데이터가 필요합니다.':'');}}).catch(e=>{if(alive){setData(fallback);setLoadNote(`${e.message} 확보된 자료만으로 생성하며, 전체 이력·15년 검증은 자료 확보 후 가능합니다.`);}}).finally(()=>{if(alive)setLoading(false);});
-    return()=>{alive=false;worker.current?.terminate();worker.current=null;active.current=false;};
-  },[fallback,revision]);
+  const [budget,setBudget]=useState(2000),[seed,setSeed]=useState(20261021),[asOf,setAsOf]=useState(()=>new Date().toISOString());
+  const [result,setResult]=useState<Generated|null>(null),[report,setReport]=useState<ValidationReport|null>(null),[copyNote,setCopyNote]=useState(''),[revision,setRevision]=useState(0);
+  useEffect(()=>{let alive=true;setLoading(true);setError('');setResult(null);setReport(null);
+    Promise.all(['full-history.json','advanced-result.json'].map(file=>fetch(`${import.meta.env.BASE_URL}data/${file}`).then(r=>{if(!r.ok)throw new Error('사전 분석 결과가 준비되지 않았습니다. 잠시 후 다시 확인해 주세요.');return r.json();}))).then(([d,cached])=>{
+      d.draws=validateDraws(d.draws);
+      if(!d.verified||d.draws[0].round!==1||cached.signature!==dataSignature(d.draws)||cached.report?.version!=='advanced-v1'||cached.result?.last?.round!==d.draws.at(-1).round)throw new Error('데이터와 사전 분석 결과가 일치하지 않습니다. 새 분석 배포를 기다려 주세요.');
+      const selectedResult=scope==='recent15'?cached.recentResult:cached.result;
+      if(!selectedResult)throw new Error('선택한 범위의 사전 분석 결과가 준비 중입니다.');
+      if(!alive)return;setData(scope==='recent15'?{...d,draws:recent15(d.draws,new Date(cached.report.asOf))}:d);setAsOf(cached.report.asOf);setBudget(cached.report.budget);setSeed(cached.report.seed);setReport(cached.report);setResult(selectedResult);setLoadNote(d.draws.at(-1).round<expectedRound()?'최신 회차 분석 준비 중입니다. 아래 결과는 표시된 기준 회차까지의 사전 분석입니다.':'배포 시 완료한 분석 결과입니다. 이 기기에서 전수 분석이나 과거 검증을 다시 실행하지 않습니다.');
+    }).catch(e=>{if(alive)setError(e instanceof Error?e.message:String(e));}).finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};
+  },[revision,scope]);
   const split=useMemo(()=>{try{return data?analysisSplit(data.draws,new Date(asOf)):null;}catch{return null;}},[data,asOf]);
-  function reset(){worker.current?.terminate();worker.current=null;active.current=false;setBusy(false);setReport(null);setResult(null);setCopyNote('');setError('');}
-  function cancel(){reset();setError('계산을 중지했습니다. 완료되지 않은 검증 수치와 가중치는 적용하지 않습니다.');}
-  function run(action:'generate'|'validate'){
-    if(!data||active.current)return;active.current=true;setBusy(true);setError('');setResult(null);setCopyNote('');if(action==='validate')setReport(null);
-    try{worker.current??=new Worker(new URL('../workers/advanced.worker.ts',import.meta.url),{type:'module'});
-      const fail=(message:string)=>{worker.current?.terminate();worker.current=null;active.current=false;setBusy(false);setReport(null);setError(message);};
-      worker.current.onerror=()=>fail('계산 중 오류가 발생했습니다. 후보 수를 줄여 다시 시도해 주세요.');
-      worker.current.onmessage=e=>{if(e.data.progress){setProgress(e.data.progress);return;}if(e.data.error){fail(e.data.error);return;}if(e.data.action==='validate'){setReport(e.data.report);setProgress({phase:'검증 가중치로 최종 조합 생성',done:0,total:budget});worker.current!.postMessage({action:'generate',data,budget,seed,asOf});return;}setResult(e.data.result);setBusy(false);active.current=false;};
-      setProgress({phase:action==='validate'?'검증 준비':'몬테카를로 후보 생성',done:0,total:1});worker.current.postMessage({action,data,budget,seed,asOf,precomputed:report});
-    }catch(e){active.current=false;setBusy(false);setError(e instanceof Error?e.message:String(e));}
-  }
-  const canValidate=!!data?.verified&&!!split?.complete&&split.all[0].round===1;
   const hot=result?[...result.numbers].sort((a,b)=>b.recent[100]-a.recent[100]||a.number-b.number).slice(0,10):[];
   const cold=result?[...result.numbers].sort((a,b)=>a.recent[100]-b.recent[100]||a.number-b.number).slice(0,10):[];
   return <div className="advanced-analysis">
-    <section className="panel"><div className="panel-head"><div><h2>통합 분석 · 15년 가중치 검증</h2><p>전체 이력으로 10개 항목을 분석하고, 최근 15년을 분리해 가중치를 검증합니다. 추천은 서로 다른 A~E 5조합입니다.</p></div></div>
+    <section className="panel"><div className="panel-head"><div><h2>사전 분석 기반 통합 추천</h2><p>전체 이력으로 10개 항목을 분석하고, 최근 15년을 분리해 가중치를 검증합니다. 추천은 서로 다른 A~E 5조합입니다.</p></div></div>
       <p className="advanced-status">{loading?'공식 전체 이력을 불러오는 중…':`${data?.source??'자료 없음'} · ${data?.draws[0]?.round??'—'}~${data?.draws.at(-1)?.round??'—'}회`}</p>
       {loadNote&&<p className="alert warning">{loadNote}</p>}
-      <button className="btn btn-primary" disabled={loading||busy||!data} onClick={()=>run('generate')}>추천번호 5조합 생성</button><details className="advanced-settings"><summary>생성 설정과 직접 검증 (선택)</summary><div className="controls advanced-controls"><label>회차당 후보 수<select value={budget} disabled={busy} onChange={e=>{reset();setBudget(Number(e.target.value));}}><option value={2000}>2,000 · 빠른 검증</option><option value={10000}>10,000 · 기본</option><option value={100000}>100,000 · 정밀 계산</option><option value={1000000}>1,000,000 · 대규모 계산</option></select></label><label>재현용 난수 시드<input type="number" min={0} max={4294967295} value={seed} disabled={busy} onChange={e=>{reset();setSeed(Math.max(0,Math.min(4294967295,Number(e.target.value)||0))>>>0);}}/></label></div>
-      <p className="muted">목표 최대 100만 고유 후보. 실제 실행 수를 기록합니다. 검증과 최종 생성에 같은 후보 수·규칙·시드를 사용하며, 100만 후보의 전체 검증은 많은 시간과 메모리를 사용합니다.</p>
-      <div className="advanced-actions"><button className="btn btn-primary" disabled={loading||busy||!data||data.draws.length<30} onClick={()=>run('generate')}>{report?'현재 검증 가중치로 5조합 생성':'기본 가중치로 5조합 생성'}</button><button className="btn btn-white" disabled={loading||busy||!canValidate} onClick={()=>run('validate')}>15년 가중치 검증 후 5조합 생성</button>{busy&&<button className="btn btn-white" onClick={cancel}>계산 중지</button>}<button className="btn btn-white" disabled={busy||loading} onClick={()=>{reset();setRevision(v=>v+1);}}>전체 이력 다시 확인</button></div>
-      {!canValidate&&!loading&&<p className="muted">가중치 검증은 공식 전체 이력과 최신 회차를 포함하는 최근 15년 자료가 모두 확보되어야 실행할 수 있습니다.</p>}
-      </details>{busy&&<div className="alert" role="status">{progress.phase} · {progress.done.toLocaleString()} / {progress.total.toLocaleString()}<progress aria-label="통합 분석 진행률" max={progress.total} value={progress.done}/></div>}
+      <div className="advanced-actions"><button className="btn btn-primary" disabled={loading} onClick={()=>setRevision(v=>v+1)}>{loading?'사전 분석 결과 불러오는 중…':'분석 결과 새로 불러오기'}</button></div>
       {error&&<p className="alert error" role="alert">{error}</p>}
       <details><summary>분석 방식과 검증 원칙</summary><div className="advanced-help"><p>빈도, 마르코프, 베이즈, 평균회귀·편차, 홀짝·고저, 합계, 구간, 연속번호·끝수, AC값·간격, 다양성의 기본 가중치는 15/10/10/10/10/10/10/5/10/10%입니다.</p><p>빈도는 전체·최근 100회 비율의 평균, 마르코프는 출현 여부 2상태 전이와 Beta(4,26) 평활화 후 추가 수축, 베이즈는 최근 30/50/100/200회 사후평균에서 표준편차를 뺀 값의 평균을 사용합니다. 평균회귀는 장기·최근 표준화 편차의 크기를 표현합니다. 랜덤워크는 매회 출현 여부−6/45를 누적한 관측 경로이며 미래 번호 예측기로 해석하지 않습니다.</p><p>번호 지표는 관측 번호 중 최솟값~최댓값으로 0~100 정규화합니다. 조합 분포는 전체 이력의 해당 구간 빈도에 1을 더해 최빈 구간 대비 비율을 계산합니다. 합계는 20 단위, AC·간격은 AC/평균 간격 2 단위/간격 표준편차 3 단위로 묶습니다. 같은 끝수는 동일 끝수 번호 쌍 수로 셉니다. 이월수·이웃수는 패턴 항목에 함께 반영합니다.</p><p>Safety Σ는 과거 분포 2.5~97.5% 분위수 밖 후보를 표시합니다. Games Out Value는 관측 분포와 균등 후보 꼬리 비율을 비교해 |z|≤3.3이면 재편입합니다. 재편입되지 않은 후보도 불가능하다고 제외하지 않고 5점만 감점합니다. 최종 점수 = 항목 점수×가중치의 합−꼬리 감점. 다양성 점수는 이미 선정한 조합과의 최대 겹침으로 계산하며 공통 번호는 최대 3개입니다.</p><p>학습 10년 중 첫 9년은 초기 통계 구성, 마지막 52회는 기여도 탐색에 사용합니다. 다음 3년 모든 회차에서 기본·동일·중심 모델과 항목별 절반 가중치 모델, 학습에서 만든 규제 후보를 비교합니다. 검증 구간의 세 부분에서 안정성과 무작위 대비 개선이 함께 확인된 경우에만 후보를 동결합니다. 마지막 2년에서는 기본·동결 후보·무작위만 평가하고 새 후보를 고르거나 가중치를 다시 맞추지 않습니다.</p><p>회차별 5게임 평균을 분석 단위로 사용합니다. 8회차 블록 부호반전 검정 4,096회, 블록 부트스트랩 95% 신뢰구간과 Bonferroni 다중비교 보정을 적용합니다. 블록 가정·한 개 난수 시드·후보 탐색에 따른 불확실성이 남습니다. 통계적 개선은 미래 당첨 예측력의 입증이 아닙니다.</p></div></details>
     </section>
@@ -56,5 +41,6 @@ export default function AdvancedAnalysis({fallback}:{fallback:Dataset|null}){
     <p className="choice-notice">공정한 로또 6/45에서 모든 개별 조합의 1등 당첨 확률은 1/8,145,060으로 동일합니다. 15년 가중치 최적화도 미래 당첨 확률 향상을 보장하지 않습니다.</p>
   </div>;
 }
+
 
 
