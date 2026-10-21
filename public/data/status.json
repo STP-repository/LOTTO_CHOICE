@@ -1,5 +1,7 @@
 {
-  "checkedAt": "2026-10-21T05:15:09.641Z",
+  "checkedAt": "2026-10-21T05:34:25.935Z",
   "ok": true,
-  "errors": []
+  "errors": [
+    "https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=all: fetch failed"
+  ]
 }
