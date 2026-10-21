@@ -6,6 +6,7 @@ try {
   const next=await collect();
   if(previous && next.draws.at(-1)!.round<previous.draws.at(-1)!.round)throw new Error('기존 데이터보다 오래된 응답입니다.');
   if(previous?.verified && !next.verified)for(const d of next.draws){const old=previous.draws.find(o=>o.round===d.round);if(old && (old.numbers.join()!==d.numbers.join()||old.bonus!==d.bonus))throw new Error(`미러와 기존 공식 ${d.round}회 데이터 불일치`);}
+  if(previous?.verified&&!next.verified)throw new Error('공식 서버 확인 실패: 미러로 기존 공식 검증 데이터를 덮어쓰지 않고 마지막 공식 기록을 유지합니다.');
   await writeFile('public/data/lotto.json.tmp',JSON.stringify(next,null,2));await rename('public/data/lotto.json.tmp','public/data/lotto.json');
   await writeFile('public/data/status.json',JSON.stringify({checkedAt:new Date().toISOString(),ok:true,errors:next.notes},null,2));
   console.log(JSON.stringify({source:next.source,count:next.draws.length,first:next.draws[0],last:next.draws.at(-1)},null,2));
@@ -20,6 +21,7 @@ try{
   let old:Dataset|undefined;try{old=JSON.parse(await readFile('public/data/full-history.json','utf8'));if(old)validateDraws(old.draws);}catch{old=undefined;}
   if(old&&old.draws.at(-1)!.round>full.draws.at(-1)!.round)throw new Error('전체 이력 응답이 기존 파일보다 오래되었습니다.');
   if(old?.verified&&!full.verified)for(const d of full.draws){const prior=old.draws.find(p=>p.round===d.round);if(prior&&(prior.numbers.join()!==d.numbers.join()||prior.bonus!==d.bonus))throw new Error(`${d.round}회 공식 기록과 불일치`);}
+  if(old?.verified&&!full.verified)throw new Error('공식 전체 이력 확인 실패: 마지막 공식 검증 기록을 유지합니다.');
   await writeFile('public/data/full-history.json.tmp',JSON.stringify(full));await rename('public/data/full-history.json.tmp','public/data/full-history.json');
   await writeFile('public/data/full-status.json',JSON.stringify({ok:true,checkedAt:new Date().toISOString(),notes:full.notes}));
   console.log(`전체 이력: ${full.draws.length}회차 · ${full.source}`);
