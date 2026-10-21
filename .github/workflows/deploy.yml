@@ -37,6 +37,8 @@ jobs:
             git commit -m "Update lottery data and collection status"
             git push
           fi
+      - name: Validate weights and prepare recommendations automatically
+        run: npx tsx scripts/publish-advanced.ts
       - name: Type check
         run: npm run typecheck
       - name: Tests
@@ -57,6 +59,8 @@ jobs:
           path: |
             public/data/status.json
             data/last-error.json
+            reports/advanced-summary.json
+            reports/advanced-validation.json
   deploy:
     needs: build
     runs-on: ubuntu-latest

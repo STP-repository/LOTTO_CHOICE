@@ -1,0 +1,40 @@
+{
+  "asOf": "2026-10-21T05:00:42.648Z",
+  "source": "동행복권 공식 전체 이력",
+  "budget": 2000,
+  "seed": 20261021,
+  "split": {
+    "start": "2011-10-21",
+    "end": "2026-10-21",
+    "actualStart": "2011-10-22",
+    "actualEnd": "2026-10-17",
+    "first": 464,
+    "last": 1246,
+    "fullFirst": 1,
+    "fullLast": 1246,
+    "training": 522,
+    "validation": 157,
+    "test": 104,
+    "trainingEvaluated": 52,
+    "complete": true
+  },
+  "models": 17,
+  "executions": 313,
+  "modelExecutions": 3605,
+  "applied": false,
+  "reason": "안정적이고 유의한 개선이 검증되지 않아 기본 가중치 유지.",
+  "weights": {
+    "frequency": 15,
+    "markov": 10,
+    "bayes": 10,
+    "deviation": 10,
+    "balance": 10,
+    "sum": 10,
+    "ranges": 10,
+    "patterns": 5,
+    "spacing": 10,
+    "diversity": 10
+  },
+  "finalAverage": 0.8326923076923077,
+  "randomAverage": 0.8269230769230769
+}

@@ -14,11 +14,9 @@ export const METHOD_DETAILS: { mode: Mode; icon: string; title: string; descript
 ];
 
 export const CHOICES:{mode:Mode;icon:string;title:string;description:string}[]=[
- METHOD_DETAILS.find(c=>c.mode==='integrated')!,METHOD_DETAILS.find(c=>c.mode==='random')!,
+ METHOD_DETAILS.find(c=>c.mode==='random')!,
  {mode:'all',icon:'▥',title:'15년 출현 빈도',description:'15년 번호별 출현 횟수만 평가해 점수가 높은 순으로 추천해요.'},
- {mode:'recent',icon:'↗',title:'최근 100회 흐름',description:'최근 100회 출현 횟수만 평가해 점수순으로 추천해요.'},
  {mode:'overdue',icon:'◷',title:'미출현 기간',description:'마지막 출현 이후 경과 회차만 평가해 오래 쉬었던 번호 중심으로 추천해요.'},
- {mode:'pairs',icon:'◇',title:'함께 나온 번호 쌍',description:'한 조합의 15개 번호 쌍이 함께 나왔던 횟수만 평가해 추천해요.'},
 ];
 
 export function combinationFacts(numbers: number[]) {

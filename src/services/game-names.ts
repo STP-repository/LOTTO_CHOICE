@@ -1,0 +1,4 @@
+const KEY='lotto-best-choice:recent-game-names:v1';
+export function replaceRecentGameNames(names:string[]){if(names.length>50||names.some(n=>!n.trim()||n.trim().length>20))throw new Error('이름은 1~20자, 목록은 최대 50개입니다.');const next=[...new Set(names.map(n=>n.trim()))];localStorage.setItem(KEY,JSON.stringify(next));return next;}
+export function recentGameNames():string[]{try{const value=JSON.parse(localStorage.getItem(KEY)??'[]');return Array.isArray(value)?[...new Set(value.filter((n):n is string=>typeof n==='string'&&n.trim().length>0&&n.length<=20).map(n=>n.trim()))].slice(0,50):[];}catch{return [];}}
+export function rememberGameNames(current:string[],previous:string[]){const next=[...new Set([...current,...previous])].slice(0,50);try{localStorage.setItem(KEY,JSON.stringify(next));return {names:next,saved:true};}catch{return {names:next,saved:false};}}

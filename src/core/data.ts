@@ -43,6 +43,15 @@ export function parseCsv(text: string, now = new Date()) {
 }
 export function toCsv(draws: Draw[]) { return 'round,date,n1,n2,n3,n4,n5,n6,bonus\n'+draws.map(d=>[d.round,d.date,...d.numbers,d.bonus].join(',')).join('\n'); }
 export async function fetchJson(url:string) { const r=await fetch(url,{signal:AbortSignal.timeout(20000),cache:'no-store'}); if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }
+export async function collectFullHistory(now=new Date(),fetcher:(url:string)=>Promise<unknown>=fetchJson):Promise<Dataset>{
+  const notes:string[]=[];
+  for(const url of [OFFICIAL,...MIRRORS])try{
+    const draws=validateDraws(url===OFFICIAL?normalizeOfficial(await fetcher(url)):normalizeMirror(await fetcher(url)),now);
+    if(draws[0].round!==1||draws.at(-1)!.round<expectedRound(now))throw new Error('제1회부터 최신 확정 회차까지의 기록이 필요합니다.');
+    return {draws,source:url===OFFICIAL?'동행복권 공식 전체 이력':'공개 미러 전체 이력 (공식 미검증)',sourceUrl:url,verified:url===OFFICIAL,updatedAt:now.toISOString(),notes};
+  }catch(e){notes.push(`${url}: ${e instanceof Error?e.message:String(e)}`);}
+  throw new Error(notes.join('\n'));
+}
 export async function collect(now = new Date(), fetcher: (url:string)=>Promise<unknown> = fetchJson): Promise<Dataset> {
   const notes:string[]=[];
   for (const url of [OFFICIAL,...MIRRORS]) {
