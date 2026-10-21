@@ -11,6 +11,14 @@
 
 
 .party-people-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}.party-new-register{border:1px solid #c8d9bc;border-radius:6px;background:#f2f7ed;font-size:10px;color:#387047;padding:7px 9px;white-space:nowrap}
+/* iOS Safari zooms focused controls whose computed text size is below 16px.
+   Keep browser pinch zoom available while preventing focus-driven enlargement. */
+@media(max-width:850px){
+  .party-games input:not([type="checkbox"]),.party-games textarea,.name-admin input,.qr-name-box input{font-size:16px;line-height:1.4;}
+  .party-add{width:100%;align-items:stretch;flex-wrap:nowrap;}
+  .party-add input{flex:1 1 0;width:0;min-width:0;}
+  .party-add .btn{flex:0 0 auto;width:auto;min-width:64px;margin:0;white-space:nowrap;}
+}
 
 
 .name-admin{max-width:900px;margin:auto;padding:30px 22px}.name-admin>header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}.name-admin h1{font-size:28px;letter-spacing:-1px}.name-admin-link{font-size:10px;color:#527e56;text-decoration:underline;display:inline-block;margin:8px 0}.admin-name-list{margin:20px 0}.admin-name-list>div{display:flex;gap:10px;align-items:center;margin:10px 0}.admin-name-list input,.qr-name-box input{border:1px solid #cfddc9;border-radius:7px;padding:10px;min-width:0;flex:1}.admin-name-list .btn{font-size:11px;white-space:nowrap}.admin-delete{border:0;background:#f5e9df;border-radius:6px;padding:10px;color:#9c5d39;font-size:11px}.qr-name-box{padding:20px;background:#eff6e6;border-radius:13px;margin:20px 0}.qr-name-box h3{font-size:16px}.qr-name-box>p{font-size:12px}.qr-name-box input{width:100%;font-size:13px}.qr-history-list{display:grid;gap:14px}.qr-history-entry{padding:18px;border:1px solid #dde7d6;border-radius:13px}.qr-history-entry details{font-size:12px}.qr-history-entry .advanced-actions{margin-bottom:0}@media(max-width:540px){.admin-name-list>div{gap:5px}.admin-name-list input{width:90px}.admin-name-list .btn{font-size:9px;padding:8px}.admin-name-list>div>span{font-size:10px}.admin-delete{font-size:9px;padding:8px}}
