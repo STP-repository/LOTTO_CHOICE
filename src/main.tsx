@@ -1,3 +1,4 @@
+import {startCloudRecords} from './services/cloud-records';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
@@ -6,3 +7,5 @@ createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></Re
 
 import './landing.css';
 import './games.css';
+
+startCloudRecords();

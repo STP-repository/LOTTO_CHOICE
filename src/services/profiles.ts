@@ -26,4 +26,4 @@ export function selectProfile(id:string){if(!listProfiles().some(p=>p.id===id))t
 export function renameProfile(name:string){if(!name.trim()||name.trim().length>20)throw new Error('사용자 이름은 1~20자로 입력해 주세요.');const old=currentProfile(),next={...old,name:name.trim()};localStorage.setItem(INDEX,JSON.stringify(listProfiles().map(p=>p.id===old.id?next:p)));current=next;return next;}
 // Capture the identity for the lifetime of this page. Switching reloads the page,
 // so an old asynchronous operation can never write into the newly selected profile.
-export const personalStorage={getItem:(key:string)=>localStorage.getItem(scoped(key,currentProfile().id)),setItem:(key:string,value:string)=>localStorage.setItem(scoped(key,currentProfile().id),value)};
+export const personalStorage={getItem:(key:string)=>localStorage.getItem(scoped(key,currentProfile().id)),setItem:(key:string,value:string)=>{localStorage.setItem(scoped(key,currentProfile().id),value);if(typeof window!=='undefined')window.dispatchEvent(new Event('lotto:personal-change'));}};
