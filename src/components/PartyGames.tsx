@@ -5,6 +5,7 @@ import {activeGameRoster,saveActiveGameRoster,recentGameNames,rememberGameNames}
 const colors=['#e6ae40','#45a5c4','#df7b8b','#8c86cc','#58b28b','#c985ae'];
 export default function PartyGames(){
  const profile=currentProfile(),[defenseOpen,setDefenseOpen]=useState(false);
+ useEffect(()=>{if(!defenseOpen)return;const before=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=before;};},[defenseOpen]);
  const initial=useRef(activeGameRoster()),[names,setNames]=useState(initial.current.names),[selected,setSelected]=useState(initial.current.selected),[name,setName]=useState(''),[recent,setRecent]=useState(recentGameNames),[error,setError]=useState(''),[seconds,setSeconds]=useState(20),[players,setPlayers]=useState<string[]>([]),[plan,setPlan]=useState<ReturnType<typeof makeLadder>|null>(null),[progress,setProgress]=useState(0),[running,setRunning]=useState(false);
  useEffect(()=>{saveActiveGameRoster(names,selected);},[names,selected]);
  useEffect(()=>{if(!running)return;const start=performance.now();const timer=setInterval(()=>{const value=Math.min(1,(performance.now()-start)/(seconds*1000));setProgress(value);if(value>=1)setRunning(false);},33);return()=>clearInterval(timer);},[running,seconds]);
