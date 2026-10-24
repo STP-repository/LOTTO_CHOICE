@@ -1,19 +1,6 @@
 {
   "draws": [
     {
-      "round": 464,
-      "date": "2011-10-22",
-      "numbers": [
-        6,
-        12,
-        15,
-        34,
-        42,
-        44
-      ],
-      "bonus": 4
-    },
-    {
       "round": 465,
       "date": "2011-10-29",
       "numbers": [
@@ -10178,11 +10165,24 @@
         28
       ],
       "bonus": 6
+    },
+    {
+      "round": 1247,
+      "date": "2026-10-24",
+      "numbers": [
+        8,
+        14,
+        21,
+        22,
+        42,
+        45
+      ],
+      "bonus": 24
     }
   ],
   "source": "동행복권 공식",
   "sourceUrl": "https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=all",
-  "updatedAt": "2026-10-22T06:27:02.471Z",
+  "updatedAt": "2026-10-24T16:35:07.348Z",
   "verified": true,
   "notes": []
 }
