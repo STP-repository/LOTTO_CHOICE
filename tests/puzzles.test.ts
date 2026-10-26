@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {difficulty,generateEscape,generateHarvest,hashSeed,verifyEscape,verifyHarvest,initialHarvest,placeToken,harvestTick,canonicalGrid} from '../src/core/puzzles';
 const stages=['1','100','500','1000','5000','30000','100000'];
 test('난이도 정책의 모든 경계와 무한 단계 상한',()=>{
- for(const [stage,tier] of [['1',0],['30',0],['31',1],['100',1],['101',2],['300',2],['301',3],['500',3],['501',4],['1000',4],['1001',5],['100000',5],['999999999999999999999999999',5]] as const)assert.equal(difficulty(stage).tier,tier);
+ for(const [stage,tier] of [['1',0],['5',0],['6',1],['20',1],['21',2],['80',2],['81',3],['250',3],['251',4],['700',4],['701',5],['100000',5],['999999999999999999999999999',5]] as const)assert.equal(difficulty(stage).tier,tier);
  for(const stage of ['1001','5000','30000','100000','999999999999999999999999999']){const p=difficulty(stage);assert.ok(p.target>=4&&p.target<=5);assert.equal(p.maxBlocks,12);assert.equal(p.maxWalls,5);assert.equal(p.maxSolution,220);}
 });
 test('지정 단계 두 게임의 재현성·상한·해결 가능성',()=>{

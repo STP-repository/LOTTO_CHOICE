@@ -4,10 +4,11 @@ import {initialHarvest,placeToken,generateHarvest,hashSeed} from '../src/core/pu
 import {reserveCollection,completeCollection} from '../src/core/harvest-transport';
 test('운반 예약은 그림·수량을 바꾸지 않고 같은 픽셀과 수량을 중복 예약하지 않는다',()=>{
  const p={width:4,height:1,cells:[0,0,0,0],tokens:[{id:1,color:0,remaining:2}]},s=placeToken(p,initialHarvest(p),1)!;
- const before=structuredClone(s),a=reserveCollection(p,s,[],1,0)!,b=reserveCollection(p,s,[a],2,190)!;
- assert.deepEqual(s,before);assert.notEqual(a.index,b.index);assert.equal(reserveCollection(p,s,[a,b],3,380),null);
+ const before=structuredClone(s),a=reserveCollection(p,s,[],1,0)!;
+ assert.deepEqual(s,before);assert.equal(reserveCollection(p,s,[a],2,190),null);
  const next=completeCollection(p,s,a);assert.equal(next.collected,1);assert.equal(next.slots[0]?.remaining,1);assert.equal(next.cells[a.index],-1);
  assert.strictEqual(completeCollection(p,next,a),next);assert.equal(s.cells[a.index],0);
+ const b=reserveCollection(p,next,[],2,820)!;assert.notEqual(a.index,b.index);
  const last=completeCollection(p,next,b);assert.equal(last.slots[0],null);assert.equal(last.collected,2);
 });
 test('마지막 블록의 도착 확정 전에는 클리어되지 않고 잘못된 슬롯의 운반은 무시한다',()=>{
