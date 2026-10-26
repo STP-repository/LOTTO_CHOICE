@@ -21,3 +21,10 @@ test('이상 단계·버전·거대 기록과 클라이언트 서버 규칙 차�
  assert.throws(()=>verifyPuzzleProof('escape','1','fake',[]));
  for(const file of ['puzzles.ts','harvest-art.ts','harvest-transport.ts','puzzle-proof.ts'])assert.equal(readFileSync(`src/core/${file}`,'utf8'),readFileSync(`game-server/lib/${file}`,'utf8'));
 });
+
+test('소멸 연출 중 앞 슬롯을 건너뛴 실제 배치도 정확히 재현한다',()=>{
+ const stage='2',p=generateHarvest(stage,hashSeed(`${HARVEST_VERSION}:harvest:${stage}`));let s=initialHarvest(p),serial=0;const actions:PuzzleAction[]=[];
+ for(const id of p.solution){s=placeToken(p,s,id,[0,1])!;actions.push({type:'place',id,slot:2});for(let hit=harvestAvailable(p,s);hit;hit=harvestAvailable(p,s)){const t=s.slots[hit.slot]!,c={type:'collect' as const,id:++serial,...hit,tokenId:t.id,color:t.color,started:0};actions.push(c);s=completeCollection(p,s,c);}}
+ assert.equal(verifyPuzzleProof('harvest',stage,HARVEST_VERSION,actions).units,s.collected);
+ assert.throws(()=>verifyPuzzleProof('harvest',stage,HARVEST_VERSION,actions.map(a=>a.type==='place'?{...a,slot:7}:a)));
+});
