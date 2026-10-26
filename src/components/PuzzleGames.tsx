@@ -23,7 +23,7 @@ export default function PuzzleGames(){
  useEffect(()=>{setSettled(false);if(run?.puzzle.kind!=='harvest'||run.state.phase!=='won')return;const timer=setTimeout(()=>setSettled(true),1150);return()=>clearTimeout(timer);},[run?.puzzle,run?.state.phase]);
  useEffect(()=>{if(!kind)return;const previous=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=previous;};},[kind]);
  const [fullscreenNotice,setFullscreenNotice]=useState('');
- const enterFullscreen=()=>{const root=document.documentElement as HTMLElement & {webkitRequestFullscreen?:()=>void|Promise<void>};const request=root.requestFullscreen??root.webkitRequestFullscreen;if(!request){setFullscreenNotice('이 브라우저에서는 게임 전용 전체 화면으로 표시합니다.');return;}try{Promise.resolve(request.call(root)).then(()=>setFullscreenNotice('')).catch(()=>setFullscreenNotice('게임 전용 전체 화면으로 표시 중입니다. 브라우저가 주소창 숨기기를 허용하지 않았습니다.'));}catch{setFullscreenNotice('게임 전용 전체 화면으로 표시 중입니다.');}};
+ const enterFullscreen=()=>{const root=document.documentElement as HTMLElement & {webkitRequestFullscreen?:()=>void|Promise<void>};const request=root.requestFullscreen??root.webkitRequestFullscreen;if(!request){setFullscreenNotice('게임 전용 화면입니다. 아이폰에서 주소창까지 숨기려면 Safari에서 홈 화면에 추가한 뒤 실행해 주세요. 카카오에서는 외부 브라우저로 열어 주세요.');return;}try{Promise.resolve(request.call(root)).then(()=>setFullscreenNotice('')).catch(()=>setFullscreenNotice('게임 전용 전체 화면으로 표시 중입니다. 브라우저가 주소창 숨기기를 허용하지 않았습니다.'));}catch{setFullscreenNotice('게임 전용 전체 화면으로 표시 중입니다.');}};
  const [transportEpoch,setTransportEpoch]=useState(0);
  const {flights,arrivals,onArrive,onCancel}=useHarvestTransport(run,setRun,transportEpoch);
  const open=(k:PuzzleKind)=>{setKind(k);setRun(load(k));setSelected(null);setHint('');enterFullscreen();};
