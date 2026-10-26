@@ -10,3 +10,5 @@ reports/advanced-validation.json
 
 admin-service/
 defense-online/
+game-server/*
+!game-server/lib/

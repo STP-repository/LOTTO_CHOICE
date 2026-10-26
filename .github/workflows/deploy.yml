@@ -39,6 +39,10 @@ jobs:
         run: npx tsx scripts/publish-ranked.ts
       - name: Type check
         run: npm run typecheck
+      - name: Set up game-server lib for sync test
+        run: |
+          mkdir -p game-server/lib
+          cp src/core/puzzles.ts src/core/harvest-transport.ts src/core/puzzle-proof.ts game-server/lib/
       - name: Tests
         # Latest check is intentionally strict: fail stale data rather than silently publish.
         run: npm test

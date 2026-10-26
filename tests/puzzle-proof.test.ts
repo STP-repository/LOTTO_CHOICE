@@ -19,5 +19,5 @@ test('공개 랭킹의 클리어 검증은 같은 시드의 실제 이동과 수
 test('이상 단계·버전·거대 기록과 클라이언트 서버 규칙 차이를 거부한다',()=>{
  for(const stage of ['0','-1','1.5','1e6','9'.repeat(41)])assert.throws(()=>verifyPuzzleProof('escape',stage,GENERATOR_VERSION,[]));
  assert.throws(()=>verifyPuzzleProof('escape','1','fake',[]));
- for(const file of ['puzzles.ts','harvest-transport.ts','puzzle-proof.ts'])assert.equal(readFileSync(`src/core/${file}`,'utf8'),readFileSync(`defense-online/lib/${file}`,'utf8'));
+ for(const file of ['puzzles.ts','harvest-transport.ts','puzzle-proof.ts'])assert.equal(readFileSync(`src/core/${file}`,'utf8'),readFileSync(`game-server/lib/${file}`,'utf8'));
 });
