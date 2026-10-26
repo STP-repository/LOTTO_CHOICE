@@ -15,7 +15,7 @@ test('통합 추천은 전체 조합의 상위 순위이며 시드·게임 수·
  assert.equal(new Set(a.map(g=>g.numbers.join())).size,10);
  for(let i=0;i<a.length;i++){assert.equal(a[i].rank,i+1);assert.ok(a[i].reasons?.length);if(i)assert.ok(a[i-1].score!>=a[i].score!-1e-10);}
  b[0].numbers[0]=999;assert.deepEqual(a.slice(0,5),recommend(draws,'integrated',5,0));
- const m=evidenceModel(draws),full=rankAllCombinations(m);assert.equal(full.checked,TOTAL_COMBINATIONS);assert.equal(full.total,TOTAL_COMBINATIONS);
+ const m=evidenceModel(draws),full=rankAllCombinations(m,10);assert.equal(full.checked,TOTAL_COMBINATIONS);assert.equal(full.total,TOTAL_COMBINATIONS);
  assert.deepEqual(a.map(g=>g.numbers),full.top.map(g=>g.numbers));
  assert.throws(()=>recommend(draws,'integrated',1,42));
 });

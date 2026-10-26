@@ -2,9 +2,8 @@ import { rankAllCombinations } from './ranking';
 import { evidenceModel, evaluateEvidence,FEATURE_WEIGHTS,type FeatureWeights } from './evidence';
 import type { Draw } from './data';
 import { frequency } from './statistics';
-import { recent15 } from './data';
 import { patternProfile, selectPatternNumbers, consecutivePairs } from './pattern';
-export const MODES={all:'15년 전체 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'15년 통합 추천',pattern:'15년 패턴 기준',overdue:'미출현 기간',odd:'홀짝 패턴',ranges:'구간 구성',pairs:'동반 번호 쌍',consecutive:'연속번호 패턴',overlap:'직전 중복 패턴'} as const;
+export const MODES={all:'전체 회차 통계',recent:'최근 100회 통계',hot:'고빈도 번호 중심',cold:'저빈도 번호 중심',balanced:'홀짝·구간 균형',composite:'종합 통계 적합도',random:'완전 무작위',integrated:'전체 회차 통합 추천',pattern:'전체 회차 패턴 기준',overdue:'미출현 기간',odd:'홀짝 패턴',ranges:'구간 구성',pairs:'동반 번호 쌍',consecutive:'연속번호 패턴',overlap:'직전 중복 패턴'} as const;
 export type Mode=keyof typeof MODES;
 export type BaseMode='all'|'recent'|'hot'|'cold'|'balanced'|'composite'|'random';
 export type SourceMode=Exclude<Mode,'integrated'>;
@@ -29,7 +28,7 @@ export function score(ns:number[],m:ReturnType<typeof model>,mode:BaseMode) {
 export function recommend(draws:Draw[],mode:Mode,count:number,seed:number):RecommendedGame[] {
   if(mode==='integrated')return integratedRecommendations(draws,count,seed);
   if(mode in CONDITION_FEATURES)return rankedRecommendations(draws,mode,count);
-  if(![1,5,10].includes(count))throw new Error('게임 수는 1, 5, 10만 가능합니다.');
+  if(![1,5,10,15].includes(count))throw new Error('게임 수는 1, 5, 10, 15만 가능합니다.');
   if(!draws.length && mode!=='random')throw new Error('추천에 사용할 데이터가 없습니다.');
   if(mode==='pattern'){
     const profile=patternProfile(draws);
@@ -59,16 +58,16 @@ export function modeWeights(mode:Mode):FeatureWeights{
 }
 const rankingCache=new Map<string,RecommendedGame[]>();
 export function integratedRecommendations(input:Draw[],count:number,_seed:number,onProgress?:(checked:number,total:number)=>void):RecommendedGame[]{
- if(count!==5&&count!==10)throw new Error('통합 추천은 5게임 또는 10게임만 가능합니다.');
+ if(![5,10,15].includes(count))throw new Error('통합 추천은 5·10·15게임만 가능합니다.');
  return rankedRecommendations(input,'integrated',count,onProgress);
 }
-export function rankedRecommendations(input:Draw[],mode:Mode,count:number,onProgress?:(checked:number,total:number)=>void,scope:'recent15'|'all'='recent15'):RecommendedGame[] {
- if(![1,5,10].includes(count))throw new Error('게임 수는 1, 5, 10만 가능합니다.');
+export function rankedRecommendations(input:Draw[],mode:Mode,count:number,onProgress?:(checked:number,total:number)=>void,_scope:'all'='all'):RecommendedGame[] {
+ if(![1,5,10,15].includes(count))throw new Error('게임 수는 1, 5, 10, 15만 가능합니다.');
  if(!input.length)throw new Error('추천에 사용할 데이터가 없습니다.');
- const sorted=[...input].sort((a,b)=>a.round-b.round),draws=scope==='all'?sorted:recent15(sorted,new Date(`${sorted.at(-1)!.date}T12:00:00+09:00`));
+ const sorted=[...input].sort((a,b)=>a.round-b.round),draws=sorted;
  const key=mode+JSON.stringify(draws);let ranked=rankingCache.get(key);
  if(!ranked){
-  const evidence=evidenceModel(draws),profile=patternProfile(draws),weights=modeWeights(mode),{top}=rankAllCombinations(evidence,10,45,onProgress,weights);
+  const evidence=evidenceModel(draws),profile=patternProfile(draws),weights=modeWeights(mode),{top}=rankAllCombinations(evidence,15,45,onProgress,weights);
   ranked=top.map((g,i)=>{const e=evaluateEvidence(g.numbers,evidence,weights);return {numbers:g.numbers,rank:i+1,score:e.rating*100,reasons:e.reasons,pattern:{referenceRound:profile.last.round,overlap:g.numbers.filter(n=>profile.last.numbers.includes(n)),consecutive:consecutivePairs(g.numbers)}};});
   if(rankingCache.size>=12)rankingCache.delete(rankingCache.keys().next().value!);rankingCache.set(key,ranked);
  }else onProgress?.(8_145_060,8_145_060);

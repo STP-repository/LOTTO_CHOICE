@@ -1,10 +1,11 @@
-import { recent15, type Draw } from './data';
+import { type Draw } from './data';
 import { recommend, type Mode } from './recommend';
 export function backtest(draws:Draw[],mode:Mode='composite',seed=20261017,games=5) {
   const sorted=[...draws].sort((a,b)=>a.round-b.round); const start=Math.max(30,sorted.length-100);
   if(sorted.length<31)throw new Error('백테스트는 최소 31회 데이터가 필요합니다.');
+  if(![1,5,10,15].includes(games))throw Error('조합 수를 확인해 주세요.');
   const rows=sorted.slice(start).map((target,j)=>{
-    const train=recent15(sorted.slice(0,start+j),new Date(`${target.date}T00:00:00+09:00`));
+    const train=sorted.slice(0,start+j);
     if(train.some(d=>d.round>=target.round || d.date>=target.date))throw new Error('미래 데이터 누출 감지');
     const predicted=recommend(train,mode,games,(seed^Math.imul(target.round,2654435761))>>>0);
     const random=recommend(train,'random',games,(seed^Math.imul(target.round,1597334677))>>>0);

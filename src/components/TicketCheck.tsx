@@ -1,6 +1,6 @@
 import {queueCloudTicketDeletion} from '../services/cloud-records';
 import { useEffect, useRef, useState } from 'react';
-import jsQR from 'jsqr';
+import {readQrImage} from '../services/qr-reader';
 import type { Dataset } from '../core/data';
 import { checkGame, parseTicket, ticketDrawDate, type Ticket } from '../core/ticket';
 import { Balls } from './Charts';
@@ -17,26 +17,20 @@ export default function TicketCheck({ data, onRefresh, refreshing }: { data: Dat
   useEffect(()=>()=>{generation.current++;stream.current?.getTracks().forEach(t=>t.stop());},[]);
   useEffect(()=>{const hide=()=>{if(document.hidden)stop();};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},[]);
   function accept(value:string){stop();try{const next=parseTicket(value),entry=newTicketHistory(next,data);commitHistory([entry,...history].slice(0,100));setActiveId(entry.id);setNameInput('');setEditingName(!!entry.results?.some(r=>r.rank));setTicket(next);setError('');}catch(e){setTicket(null);setError(e instanceof Error?e.message:String(e));}}
-  function decode(source:CanvasImageSource,width:number,height:number){
-    const scale=Math.min(1,1600/Math.max(width,height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)throw new Error('이 브라우저에서 사진을 읽을 수 없습니다.');
-    ctx.drawImage(source,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
-    return jsQR(pixels.data,pixels.width,pixels.height)?.data;
-  }
   useEffect(()=>{if(!camera)return;let timer:ReturnType<typeof setTimeout>;let active=true;
-    const scan=()=>{if(!active)return;const v=video.current;try{if(v&&v.readyState>=2){const value=decode(v,v.videoWidth,v.videoHeight);if(value){accept(value);return;}}}catch{setError('카메라 화면을 읽지 못했습니다. 사진 업로드를 사용해 주세요.');stop();return;}timer=setTimeout(scan,300);};
+    const scan=async()=>{if(!active)return;const v=video.current;try{if(v&&v.readyState>=2){const value=await readQrImage(v,v.videoWidth,v.videoHeight,false);if(!active)return;if(value){try{parseTicket(value);accept(value);return;}catch{setError('로또 용지의 QR을 비춰 주세요. 다른 QR은 건너뜁니다.');}}}}catch{setError('카메라 화면을 읽지 못했습니다. 사진 업로드를 사용해 주세요.');stop();return;}timer=setTimeout(scan,300);};
     scan();return()=>{active=false;clearTimeout(timer);};
   },[camera]);
   async function start(){stop();const id=generation.current;setStarting(true);setError('');setTicket(null);
     try{if(!navigator.mediaDevices?.getUserMedia)throw new Error('카메라는 HTTPS 주소에서 지원됩니다. QR 사진을 업로드해 주세요.');
-      const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280}},audio:false});
+      const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
       if(id!==generation.current){media.getTracks().forEach(t=>t.stop());return;}stream.current=media;
       if(!video.current){stop();return;}video.current.srcObject=media;await video.current.play();if(id===generation.current)setCamera(true);
     }catch(e){if(id===generation.current){stop();setError(e instanceof DOMException&&e.name==='NotAllowedError'?'카메라 권한이 거부되었습니다. 브라우저에서 허용하거나 QR 사진을 업로드해 주세요.':e instanceof Error?e.message:'카메라를 열 수 없습니다.');}}
     finally{if(id===generation.current)setStarting(false);}
   }
   async function upload(file?:File){if(!file)return;stop();setReading(true);setError('');setTicket(null);const id=generation.current;let url='';
-    try{if(file.size>20_000_000)throw new Error('사진은 20MB 이하여야 합니다.');url=URL.createObjectURL(file);const img=new Image();img.src=url;await img.decode();if(id!==generation.current)return;const value=decode(img,img.naturalWidth,img.naturalHeight);if(!value)throw new Error('QR을 찾지 못했습니다. QR 부분을 크게, 선명하게 촬영해 주세요.');accept(value);
+    try{if(file.size>20_000_000)throw new Error('사진은 20MB 이하여야 합니다.');url=URL.createObjectURL(file);const img=new Image();img.src=url;await new Promise<void>((resolve,reject)=>{if(img.complete&&img.naturalWidth)resolve();else{img.onload=()=>resolve();img.onerror=()=>reject(Error('이 사진 형식을 읽지 못했습니다. JPG 또는 PNG로 올려 주세요.'));}});if(id!==generation.current)return;const value=await readQrImage(img,img.naturalWidth,img.naturalHeight,true);if(id!==generation.current)return;if(!value)throw new Error('QR을 찾지 못했습니다. QR을 정면에서 촬영하거나 사진을 QR 부분만 잘라 다시 올려 주세요.');accept(value);
     }catch(e){if(id===generation.current)setError(e instanceof Error?e.message:'사진을 읽지 못했습니다. JPG 또는 PNG로 다시 시도해 주세요.');}finally{if(url)URL.revokeObjectURL(url);setReading(false);}
   }
   const draw=ticket?data?.draws.find(d=>d.round===ticket.round):undefined;

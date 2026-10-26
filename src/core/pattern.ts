@@ -1,4 +1,4 @@
-import { recent15, type Draw } from './data';
+import { type Draw } from './data';
 
 export function consecutivePairs(ns: number[]) {
   const sorted = [...ns].sort((a, b) => a - b);
@@ -7,7 +7,7 @@ export function consecutivePairs(ns: number[]) {
 export function patternProfile(input: Draw[]) {
   if (!input.length) throw new Error('패턴 추천에 사용할 기록이 없습니다.');
   const sorted = [...input].sort((a, b) => a.round - b.round);
-  const draws = recent15(sorted, new Date(`${sorted.at(-1)!.date}T12:00:00+09:00`));
+  const draws = sorted;
   const last = draws.at(-1)!;
 
 

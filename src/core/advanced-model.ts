@@ -1,4 +1,5 @@
-import { cutoffDate, expectedRound, seoulDate, validateDraws, type Draw } from './data';
+import {compressCandidates,groupReport,type SelectionPath} from './combination-groups';
+import { validateDraws, type Draw } from './data';
 import { rng } from './recommend';
 
 export const FACTORS = ['frequency','markov','bayes','deviation','balance','sum','ranges','patterns','spacing','diversity'] as const;
@@ -52,7 +53,7 @@ export function buildAdvancedModel(draws:Draw[]){
   const maxima=hist.map(h=>Math.max(1,...h.values())),minmax=Array.from({length:4},(_,i)=>{const vals=numbers.map(n=>n.scores[i]);return [Math.min(...vals),Math.max(...vals)];});
   const keys=['odd','low','sum','groups','consecutive','ac'] as const;
   const bounds=keys.map(key=>({key,low:quantile(shapes.map(s=>s[key]),.025),high:quantile(shapes.map(s=>s[key]),.975)}));
-  return {numbers,previous,hist,maxima,minmax,bounds,count:draws.length};
+  return {numbers,previous,hist,maxima,minmax,bounds,count:draws.length,shapes};
 }
 export type AdvancedModel=ReturnType<typeof buildAdvancedModel>;
 export interface Candidate {numbers:number[];features:number[];shape:Shape;weighted:boolean;flagged:boolean;restored:boolean;penalty:number}
@@ -89,13 +90,15 @@ export function prepareCandidates(draws:Draw[],budget:number,seed:number,onProgr
 export type Prepared=ReturnType<typeof prepareCandidates>;
 export interface AdvancedGame {role:string;numbers:number[];score:number;features:Record<Factor,number>;shape:Shape;flagged:boolean;restored:boolean;penalty:number}
 export const overlap=(a:number[],b:number[])=>a.filter(n=>b.includes(n)).length;
-export function selectFive(prepared:Prepared,weights:Weights,seed:number):AdvancedGame[]{
+export function selectGames(prepared:Prepared,weights:Weights,seed:number,count=5):AdvancedGame[]{
+  if(![5,10,15].includes(count))throw Error('조합 수는 5·10·15만 가능합니다.');
   if(Math.round(FACTORS.reduce((s,k)=>s+weights[k]*100,0))!==10000||FACTORS.some(k=>weights[k]<0))throw new Error('가중치 합계는 100%여야 합니다.');
   const selected:AdvancedGame[]=[],random=rng(seed^0xa53c71);
   const recent=prepared.model.numbers.map(n=>n.recent[100]),long=prepared.model.numbers.map(n=>n.count);
   const maxRecent=Math.max(1,...recent),maxLong=Math.max(1,...long);
   const roles=['A · 종합 분석','B · 최근 통계','C · 장기·편차','D · 가중 몬테카를로','E · 균등 무작위·다양성'];
-  for(let role=0;role<5;role++){
+  for(let index=0;index<count;index++){
+    const role=index%5;
     let best:Candidate|undefined,bestValue=-Infinity,bestFeatures:number[]=[];
     for(const c of prepared.candidates){
       if(role===3&&!c.weighted||role===4&&c.weighted)continue;
@@ -106,18 +109,24 @@ export function selectFive(prepared:Prepared,weights:Weights,seed:number):Advanc
       const value=role===4?random():role===1||role===2?total*.65+specialty*.35:total;
       if(value>bestValue){best=c;bestValue=value;bestFeatures=f;}
     }
-    if(!best)throw new Error('공통 번호 3개 이하인 5조합을 찾지 못했습니다. 후보 수를 늘려 주세요.');
+    if(!best)throw new Error(`공통 번호 3개 이하인 ${count}조합을 찾지 못했습니다. 후보 수를 늘려 주세요.`);
     const score=Math.max(0,bestFeatures.reduce((s,v,i)=>s+v*weights[FACTORS[i]]/100,0)-best.penalty);
-    selected.push({role:roles[role],numbers:best.numbers,score,features:Object.fromEntries(FACTORS.map((k,i)=>[k,bestFeatures[i]])) as Weights,shape:best.shape,flagged:best.flagged,restored:best.restored,penalty:best.penalty});
+    selected.push({role:roles[role]+(index>=5?` · ${Math.floor(index/5)+1}차`:''),numbers:best.numbers,score,features:Object.fromEntries(FACTORS.map((k,i)=>[k,bestFeatures[i]])) as Weights,shape:best.shape,flagged:best.flagged,restored:best.restored,penalty:best.penalty});
   }
   return selected;
 }
-export function advancedGenerate(draws:Draw[],budget:number,seed:number,weights=BASE_WEIGHTS,onProgress?:(n:number)=>void){const p=prepareCandidates(draws,budget,seed,onProgress);return {games:selectFive(p,weights,seed),numbers:p.model.numbers,simulation:p.simulation,weights,seed,budget,first:draws[0],last:draws.at(-1)!,version:'advanced-v1'};}
-export function analysisSplit(input:Draw[],now=new Date()){
-  const all=validateDraws(input,now),end=seoulDate(now),start=cutoffDate(now);
-  const yearDate=(years:number)=>{const d=new Date(end);d.setUTCFullYear(d.getUTCFullYear()-years);return d.toISOString().slice(0,10);};
-  const validationStart=yearDate(5),testStart=yearDate(2),recent=all.filter(d=>d.date>=start);
-  const training=recent.filter(d=>d.date<validationStart),validation=recent.filter(d=>d.date>=validationStart&&d.date<testStart),test=recent.filter(d=>d.date>=testStart);
-  const complete=!!recent.length&&Date.parse(recent[0].date)-Date.parse(start)<7*86400000&&all.at(-1)!.round>=expectedRound(now);
-  return {all,recent,training,validation,test,start,end,validationStart,testStart,complete,actualStart:recent[0]?.date??null,actualEnd:recent.at(-1)?.date??null,first:recent[0]?.round??null,last:recent.at(-1)?.round??null};
+export function selectFive(prepared:Prepared,weights:Weights,seed:number):AdvancedGame[]{return selectGames(prepared,weights,seed,5);}
+export const ANALYSIS_VERSION='full-history-v2';
+export function roundSeed(draws:Draw[]){return (20261021^Math.imul(draws.at(-1)!.round,2654435761))>>>0;}
+export interface GenerateOptions {count?:number;path?:SelectionPath;diagnostics?:boolean}
+export function advancedGenerate(draws:Draw[],budget:number,seed:number,weights=BASE_WEIGHTS,onProgress?:(n:number)=>void,options:GenerateOptions={}){
+ return generatePrepared(draws,prepareCandidates(draws,budget,seed,onProgress),seed,weights,options);
+}
+export function generatePrepared(draws:Draw[],prepared:Prepared,seed:number,weights=BASE_WEIGHTS,options:GenerateOptions={}){
+ const budget=prepared.simulation.target,count=options.count??5,path=options.path??'standard';
+ const compression=path==='compressed'?compressCandidates(prepared,weights,count):null;
+ const games=selectGames(compression?{...prepared,candidates:compression.candidates}:prepared,weights,seed,count);
+ return {games,numbers:prepared.model.numbers,simulation:prepared.simulation,weights,seed,budget,first:draws[0],last:draws.at(-1)!,version:ANALYSIS_VERSION,
+ snapshot:{lastRound:draws.at(-1)!.round,targetRound:draws.at(-1)!.round+1,lastDrawDate:draws.at(-1)!.date,signature:dataSignature(draws),settingsVersion:ANALYSIS_VERSION,seed,budget,count,path,generatedAt:new Date().toISOString()},
+ diagnostics:options.diagnostics===false?undefined:compression?.diagnostics??{independent:true,theoryTotal:8145060,primary:budget,afterCompression:budget,groupsBefore:groupReport(prepared.candidates,prepared.model.shapes,weights)}};
 }

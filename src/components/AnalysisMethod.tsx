@@ -1,7 +1,7 @@
 import {FEATURE_WEIGHTS} from '../core/evidence';
 import {modeWeights,type Mode} from '../core/recommend';
 const rows:[keyof typeof FEATURE_WEIGHTS,string,string][]=[
- ['frequency','15년 전체 빈도','선택 번호 6개의 전체 출현 횟수를 가장 많이 나온 번호의 횟수로 나누어 평균'],
+ ['frequency','전체 회차 전체 빈도','선택 번호 6개의 전체 출현 횟수를 가장 많이 나온 번호의 횟수로 나누어 평균'],
  ['recent','최근 흐름','최근 100회 출현 횟수를 같은 기간 최다 횟수로 나누어 평균'],
  ['overdue','미출현 기간','번호별 마지막 출현 이후 경과 회차를 최대 경과 회차로 나누어 평균'],
  ['odd','홀짝 구성','같은 홀수 개수가 나온 과거 회차 수를 가장 흔한 홀짝 구성의 회차 수로 나눔'],
