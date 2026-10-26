@@ -8,10 +8,10 @@ import type {PuzzleAction} from '../core/puzzle-proof';
 type Run=({puzzle:EscapePuzzle;state:EscapeState}|{puzzle:HarvestPuzzle;state:HarvestState})&{actions?:PuzzleAction[]};
 export interface Arrival {id:number;slot:number;color:number;remaining:number}
 export function useHarvestTransport(run:Run|null,setRun:Dispatch<SetStateAction<Run|null>>,epoch:number){
- const current=useRef(run),pending=useRef<Collection[]>([]),serial=useRef(0),lastStart=useRef(0),[flights,setFlights]=useState<Collection[]>([]),[arrivals,setArrivals]=useState<Arrival[]>([]);
+ const current=useRef(run),pending=useRef<Collection[]>([]),serial=useRef(0),[flights,setFlights]=useState<Collection[]>([]),[arrivals,setArrivals]=useState<Arrival[]>([]);
  useEffect(()=>{current.current=run;},[run]);
  useEffect(()=>{
-  pending.current=[];setFlights([]);setArrivals([]);lastStart.current=0;
+  pending.current=[];setFlights([]);setArrivals([]);
   const arrivalTimers=new Set<ReturnType<typeof setTimeout>>();
   const timer=setInterval(()=>{
    const r=current.current;if(!r||r.puzzle.kind!=='harvest'||r.state.phase!=='playing'||document.hidden)return;
@@ -23,10 +23,10 @@ export function useHarvestTransport(run:Run|null,setRun:Dispatch<SetStateAction<
    }
    const actions=[...(r.actions??[]),...collected];
    if(changed){const next={puzzle:p,state,actions};current.current=next;setRun(next);}
-   if(state.phase==='playing'&&pending.current.length<3&&now-lastStart.current>190){
-    const c=reserveCollection(p,state,pending.current,++serial.current,now);
-    if(c){pending.current.push(c);lastStart.current=now;}
-    else if(!pending.current.length&&!harvestAvailable(p,state)&&state.slots.every(Boolean)){const next={puzzle:p,state:{...state,phase:'lost' as const},actions};current.current=next;setRun(next);}
+   if(state.phase==='playing'){
+    let c=reserveCollection(p,state,pending.current,++serial.current,now);
+    while(c){pending.current.push(c);c=reserveCollection(p,state,pending.current,++serial.current,now);}
+    if(!pending.current.length&&!harvestAvailable(p,state)&&state.slots.every(Boolean)){const next={puzzle:p,state:{...state,phase:'lost' as const},actions};current.current=next;setRun(next);}
    }
    setFlights(old=>old.length===pending.current.length&&old.every((c,i)=>c.id===pending.current[i].id)?old:[...pending.current]);
   },40);
