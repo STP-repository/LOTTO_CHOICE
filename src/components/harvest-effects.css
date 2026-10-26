@@ -16,3 +16,4 @@
 @media(prefers-reduced-motion:reduce){.harvest-pixels i.harvest-reserved{animation:none;opacity:.65}.harvest-slot-active,.harvest-slot-active:before,.harvest-slot-finish{animation:none!important}.harvest-slot-finish span{display:none}}
 
 .harvest-ground-route{animation:none!important}.harvest-ground-route .harvest-flying-block{animation:none;transform:rotate(-3deg)}.harvest-ground-route .harvest-flight-trail,.harvest-ground-route .harvest-flight-star{display:none}
+.harvest-slots b{text-shadow:none;font-weight:800}.harvest-queue b{font-weight:800}
