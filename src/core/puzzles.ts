@@ -89,7 +89,18 @@ export function harvestTick(p:HarvestBoard,s:HarvestState):HarvestState{
  return {...s,cells,slots,collected:s.collected+1,last:{index,color:token.color,slot},phase:cells.every(v=>v<0)?'won':'playing'};
 }
 export function verifyHarvest(p:HarvestBoard,solution:number[]){let state=initialHarvest(p);for(const id of solution){const placed=placeToken(p,state,id);if(!placed)return false;state=placed;for(let tick=0;tick<=p.cells.length;tick++){const next=harvestTick(p,state);if(next===state)break;state=next;if(state.phase==='won')return true;if(state.phase==='lost')return false;}}return state.phase==='won';}
-const themeNames=['별빛 정원','달빛 고래','구름 여우','우주 정거장','햇살 과일','수정 숲','오로라 섬','꽃잎 나비'];
+export const HARVEST_PALETTE=['#fa8754','#56cdf0','#343143','#ffdb62','#76ce83','#fff2dc'];
+const themeNames=['별빛 꽃','달빛 고래','구름 여우','우주 로켓','햇살 딸기','숲속 버섯','오로라 행성','꽃잎 나비'];
+const harvestArt=[
+ ['............','....222.....','...20002....','..2055502...','...20002....','.222222222..','20002320002.','20552325502.','20002320002.','.222232222..','.....4......','....444.....'],
+ ['............','............','...22222....','..2111112...','.211511112..','211111111122','211111111121','211111111122','.211111112..','..2222222...','....11......','............'],
+ ['.22......22.','.202....202.','.2002..2002.','.2000220002.','..20000002..','.2000000002.','200520025002','200550055002','.205555502..','..2555522...','...2222.....','............'],
+ ['.....22.....','....2002....','...200002...','...205502...','...251152...','...251152...','..22055022..','.2120000212.','211200002112','222222222222','....0330....','.....33.....'],
+ ['....4444....','..44444444..','...444444...','..22222222..','.2000000002.','200300030002','200000000002','200030030002','.2000000002.','..20030002..','...200002...','....2222....'],
+ ['............','....2222....','...200002...','..20500502..','.2000000002.','205000050002','200005000002','222222222222','....2552....','....2552....','...255552...','...222222...'],
+ ['............','....2222....','...211112...','..21111112..','.2211111122.','200222222002','200000000002','.2222222222.','..21111112..','...211112...','....2222....','............'],
+ ['............','.222....222.','20002..20002','203002203002','200002200002','.2002220002.','..22222222..','.2002220002.','200002200002','203002203002','.222....222.','............']
+];
 function generateHarvestCandidate(stage:string,seed:number,adjust=0):HarvestPuzzle{
  const level=difficulty(stage,adjust),rand=puzzleRandom(seed),width=12+level.target+Math.floor(rand()*3),height=width,theme=Math.floor(rand()*8),colors=3+Math.min(3,level.target),phase=rand()*Math.PI*2,stretch=.75+rand()*.35,cells=Array<number>(width*height).fill(-1);
  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
@@ -102,7 +113,11 @@ function generateHarvestCandidate(stage:string,seed:number,adjust=0):HarvestPuzz
   if(theme===5){inside=Math.abs(nx)*.8+Math.abs(ny)<.87||Math.abs(nx+.45)*1.3+Math.abs(ny-.3)<.38;color=Math.floor((nx-ny+2)*3+phase)%colors;}
   if(theme===6){inside=ny>.05+.18*Math.sin(nx*4+phase)&&ny<.7&&Math.abs(nx)<.85||Math.hypot(nx+.4,ny+.45)<.22;color=ny<0?2:ny>.35?1:0;}
   if(theme===7){inside=((nx+.42)**2/.24+ny**2/.6<1)||((nx-.42)**2/.24+ny**2/.6<1)||Math.abs(nx)<.07&&Math.abs(ny)<.75;color=Math.floor(Math.abs(nx)*6+ny*2+phase+12)%colors;}
-  if(inside)cells[y*width+x]=((color+Math.floor(rand()*1.3))%colors+colors)%colors;
+  // Readable outlined pixel artwork; empty space remains real traversable space.
+  const ax=Math.min(11,Math.floor(x/width*12)),ay=Math.min(11,Math.floor(y/height*12));
+  const value=harvestArt[theme][ay][seed%2?11-ax:ax];
+  if(value!=='.')cells[y*width+x]=Number(value);
+  else if((x===0||x===width-1)&&(y===0||y===height-1)&&rand()<.5)cells[y*width+x]=3;
  }
  if(cells.filter(c=>c>=0).length<20)throw Error('그림 생성에 실패했습니다.');
  const working=[...cells],tokens:Token[]=[],solution:number[]=[];let iterations=0;

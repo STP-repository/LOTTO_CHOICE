@@ -27,3 +27,12 @@ export function renameProfile(name:string){if(!name.trim()||name.trim().length>2
 // Capture the identity for the lifetime of this page. Switching reloads the page,
 // so an old asynchronous operation can never write into the newly selected profile.
 export const personalStorage={getItem:(key:string)=>localStorage.getItem(scoped(key,currentProfile().id)),setItem:(key:string,value:string)=>{localStorage.setItem(scoped(key,currentProfile().id),value);if(typeof window!=='undefined')window.dispatchEvent(new Event('lotto:personal-change'));}};
+
+export async function checkIdentityEpoch(){
+ const response=await fetch('https://starseed-guardians-coop-20261022.fairfig7.chatgpt.site/api/puzzles?epoch=1',{cache:'no-store',signal:AbortSignal.timeout(8000)});
+ if(!response.ok)throw Error('초기화 상태를 확인하지 못했습니다.');
+ const {epoch}=await response.json();if(!Number.isSafeInteger(epoch)||epoch<0)throw Error('잘못된 초기화 상태');
+ const key='lotto-best-choice:identity-epoch:v1',previous=Number(localStorage.getItem(key)||0);
+ if(epoch>previous){const keys=Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)!);for(const k of keys)if(k===INDEX||k===LAST||LEGACY.includes(k)||k.startsWith('puzzles:')||k.startsWith('lotto:arcade')||k.includes(':profile:'))localStorage.removeItem(k);sessionStorage.removeItem(ACTIVE);current=undefined;localStorage.setItem(key,String(epoch));return true;}
+ return false;
+}
