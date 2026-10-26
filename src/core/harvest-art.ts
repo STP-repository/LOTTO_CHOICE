@@ -1,4 +1,4 @@
-export const HARVEST_VERSION='harvest-boxes-v2';
+export const HARVEST_VERSION='harvest-lanes-v3';
 export const HARVEST_PALETTE=['#fb9651','#59cbea','#282638','#ffe06a','#70cf91','#fff5e2','#344d83','#ec6266','#9870cb','#eeb993','#f0a8c2','#abbacb','#ae806d'];
 export const HARVEST_COLOR_NAMES=['주황','하늘','검정','노랑','초록','크림','남색','빨강','보라','살구','분홍','은색','갈색'];
 const species=['오리','고양이','토끼','판다','개구리','곰','펭귄','여우','로봇','가면 영웅'];

@@ -2,7 +2,7 @@ import {useRef,useState} from 'react';
 import type {CSSProperties} from 'react';
 import {createPortal} from 'react-dom';
 import type {HarvestPuzzle,HarvestState,Token} from '../core/puzzles';
-import {HARVEST_PALETTE,exposedPixels} from '../core/puzzles';
+import {HARVEST_PALETTE,exposedPixels,harvestLane} from '../core/puzzles';
 import type {Collection} from '../core/harvest-transport';
 import type {Arrival} from './useHarvestTransport';
 import HarvestCollection from './HarvestCollection';
@@ -29,13 +29,17 @@ export default function HarvestPlay({puzzle:p,state:s,flights,arrivals,onArrive,
      {t?<div className={`ph-number-box ${flights.some(c=>c.slot===i)?'ph-device-active':''}`} style={boxStyle(t.color)} aria-label={`${names[t.color]} 상자 남은 수량 ${t.remaining}`}>{countBox(t)}<span className="ph-slot-state">{openColors.has(t.color)?'수거 중':'길 열림 대기'}</span></div>:end?<div className="ph-number-box ph-box-finish" style={boxStyle(end.color)}><small>수거 완료</small><b>0</b><em>✦</em></div>:<span className="ph-empty-slot">＋<small>빈 슬롯</small></span>}
     </div>;
    })}</div>
-   <div className="ph-queue-label"><strong>수거할 숫자상자</strong><small>{full?'슬롯이 비워지면 선택할 수 있어요':'상자를 누르면 빈 슬롯에 놓여요'}</small></div>
-   <div className="ph-box-queue" aria-label="숫자상자 대기열">{s.queue.map(t=><button key={t.id} data-token-id={t.id} className="ph-number-box" style={boxStyle(t.color)} disabled={full||s.phase!=='playing'} onClick={()=>onPlace(t.id)} aria-label={`${names[t.color]} 상자 ${t.remaining}개 수거`}>{countBox(t)}</button>)}</div>
+   <div className="ph-queue-label"><strong>{s.queue.length?'다음 색을 보고 선택하세요':'마무리 수거 · 빠르게 모으는 중'}</strong><small>{full?'슬롯이 비워지면 선택할 수 있어요':'4개 줄 · 맨 위 상자만 선택'}</small></div>
+   <div className="ph-box-queue ph-lane-queue" aria-label="4개 세로 대기줄 · 앞으로 4칸 미리보기">{Array.from({length:4},(_,lane)=>{
+    const line=s.queue.filter(t=>harvestLane(t)===lane);return <div key={lane} className="ph-queue-lane" data-lane={lane} aria-label={`${lane+1}번째 대기줄`}><div key={line[0]?.id??'empty'} className="ph-lane-stack">{Array.from({length:4},(_,row)=>{
+     const t=line[row];return t?<button key={t.id} data-token-id={t.id} data-ready={row===0} data-row={row} className={`ph-number-box ${row?'ph-preview-box':'ph-front-box'}`} style={boxStyle(t.color)} disabled={row!==0||full||s.phase!=='playing'} onClick={()=>onPlace(t.id)} aria-label={`${lane+1}번 줄 ${row+1}칸 · ${names[t.color]} 상자 ${t.remaining}개 수거${row?' · 앞 상자를 먼저 선택하세요':''}`}>{countBox(t)}{row>0&&<span className="ph-wait-mark">다음</span>}</button>:<div key={`empty:${row}`} className="ph-queue-empty" aria-hidden="true"/>;
+    })}</div></div>;
+   })}</div>
    <div className="ph-tail"><small>시간제한 없이 그림을 완성해요</small><div><button onClick={()=>setHelp(v=>!v)}>게임 방법</button><button onClick={onRestart}>↻ 재시작</button></div></div>
-   {help&&<div className="ph-help"><b>상자의 숫자는 수거할 픽셀 개수예요.</b><p>같은 색의 바깥쪽 픽셀을 구멍에 모으면 숫자가 하나씩 줄어요. 테두리에 둘러싸인 픽셀은 길이 열리기 전까지 수거할 수 없어요. 다 쓴 상자는 사라지고 슬롯이 비워져요.</p><p>막히면 재시작할 수 있어요. 처음부터 상자를 맨 앞부터 차례로 선택하면 완료 가능한 순서입니다.</p></div>}
+   {help&&<div className="ph-help"><b>4개 줄의 맨 위 상자 중 하나를 선택하세요.</b><p>선택한 줄의 아래 상자가 한 칸 올라옵니다. 앞으로 4칸의 색과 수량을 보고, 그림의 바깥 테두리를 먼저 열어 주세요. 안에 갇힌 색만 슬롯에 모으면 막힐 수 있어요.</p><p>숫자 1은 픽셀 1개입니다. 다 쓴 상자는 슬롯을 비우고, 모든 대기 상자를 올린 마지막 구간은 자동으로 빠르게 수거해요. 막히면 같은 판을 재시작할 수 있어요.</p></div>}
    {notice&&<p className="ph-notice" role="status">{notice}</p>}
   </div>
-  <HarvestCollection key={`${p.stage}:${animationKey}`} pending={flights} width={p.width} height={p.height} cells={s.cells} grid={grid} hole={hole} onArrive={onArrive} onCancel={onCancel}/>
+  <HarvestCollection key={`${p.stage}:${animationKey}`} pending={flights} width={p.width} height={p.height} cells={s.cells} grid={grid} hole={hole} onArrive={onArrive} onCancel={onCancel} finishing={s.queue.length===0}/>
   {(s.phase==='lost'||s.phase==='won'&&settled)&&<div className={`ph-result ${s.phase==='won'?'ph-celebrate':''}`} role="dialog" aria-modal="true" aria-label={s.phase==='won'?'스테이지 클리어':'다시 도전'}><div className="ph-result-card"><div className="ph-confetti">{Array.from({length:18},(_,i)=><i key={i} style={{'--n':i,'--confetti-color':HARVEST_PALETTE[i%6]} as CSSProperties}/>)}</div><span className="ph-result-star">✦</span><small>{s.phase==='won'?'PICTURE COMPLETE':'ONE MORE TRY'}</small><h2>{s.phase==='won'?'그림 수거 완료!':'다시 해도 괜찮아요'}</h2><p>{s.phase==='won'?`${p.stage}단계 · ${total}개 블록을 모두 모았어요.`:'5개 슬롯의 상자가 모두 막혔어요. 새로운 순서로 다시 도전해 보세요.'}</p><p className="ph-record">{recordMessage}</p><button onClick={s.phase==='won'?onNext:onRestart}>{s.phase==='won'?'다음 그림 →':'이 단계 다시 시작'}</button><button className="ph-secondary" onClick={onExit}>게임 목록</button></div></div>}
  </section>,document.body);
 }

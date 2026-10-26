@@ -5,7 +5,7 @@ import {reserveCollection,completeCollection} from '../src/core/harvest-transpor
 test('운반 예약은 그림·수량을 바꾸지 않고 같은 픽셀과 수량을 중복 예약하지 않는다',()=>{
  const p={width:4,height:1,cells:[0,0,0,0],tokens:[{id:1,color:0,remaining:2}]},s=placeToken(p,initialHarvest(p),1)!;
  const before=structuredClone(s),a=reserveCollection(p,s,[],1,0)!;
- assert.deepEqual(s,before);assert.equal(reserveCollection(p,s,[a],2,190),null);
+ assert.deepEqual(s,before);const second=reserveCollection(p,s,[a],2,190)!;assert.ok(second);assert.notEqual(second.index,a.index);assert.equal(reserveCollection(p,s,[a,second],3,190),null);
  const next=completeCollection(p,s,a);assert.equal(next.collected,1);assert.equal(next.slots[0]?.remaining,1);assert.equal(next.cells[a.index],-1);
  assert.strictEqual(completeCollection(p,next,a),next);assert.equal(s.cells[a.index],0);
  const b=reserveCollection(p,next,[],2,820)!;assert.notEqual(a.index,b.index);

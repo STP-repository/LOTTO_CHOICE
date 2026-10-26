@@ -5,7 +5,7 @@ import type {HarvestPuzzle,HarvestState,EscapePuzzle,EscapeState} from '../core/
 import {reserveCollection,completeCollection} from '../core/harvest-transport';
 import type {Collection} from '../core/harvest-transport';
 import type {PuzzleAction} from '../core/puzzle-proof';
-type Run=({puzzle:EscapePuzzle;state:EscapeState}|{puzzle:HarvestPuzzle;state:HarvestState})&{actions?:PuzzleAction[]};
+type Run=({puzzle:EscapePuzzle;state:EscapeState}|{puzzle:HarvestPuzzle;state:HarvestState})&{actions?:PuzzleAction[];attempt?:string};
 export interface Arrival {id:number;slot:number;color:number;remaining:number}
 export function useHarvestTransport(run:Run|null,setRun:Dispatch<SetStateAction<Run|null>>,epoch:number){
  const current=useRef(run),pending=useRef<Collection[]>([]),serial=useRef(0),[flights,setFlights]=useState<Collection[]>([]),[arrivals,setArrivals]=useState<Arrival[]>([]);
@@ -24,14 +24,14 @@ export function useHarvestTransport(run:Run|null,setRun:Dispatch<SetStateAction<
    for(const c of pending.current.filter(c=>delivered.current.has(c.id))){
     delivered.current.delete(c.id);
     const next=completeCollection(p,state,c);pending.current=pending.current.filter(v=>v.id!==c.id);
-    if(next!==state){collected.push({type:'collect',...c});const arrival={id:c.id,slot:c.slot,color:c.color,remaining:next.slots[c.slot]?.remaining??0};setArrivals(old=>[...old.filter(v=>v.slot!==c.slot),arrival]);const t=setTimeout(()=>{setArrivals(old=>old.filter(v=>v.id!==arrival.id));arrivalTimers.delete(t);},340);arrivalTimers.add(t);state=next;changed=true;}
+    if(next!==state){collected.push({type:'collect',...c});const arrival={id:c.id,slot:c.slot,color:c.color,remaining:next.slots[c.slot]?.remaining??0};setArrivals(old=>[...old.filter(v=>v.slot!==c.slot),arrival]);const t=setTimeout(()=>{setArrivals(old=>old.filter(v=>v.id!==arrival.id));arrivalTimers.delete(t);},180);arrivalTimers.add(t);state=next;changed=true;}
    }
    const actions=[...(r.actions??[]),...collected];
-   if(changed){const next={puzzle:p,state,actions};current.current=next;setRun(next);}
+   if(changed){const next={...r,puzzle:p,state,actions};current.current=next;setRun(next);}
    if(state.phase==='playing'){
     let c=reserveCollection(p,state,pending.current,++serial.current,now);
     while(c){pending.current.push(c);c=reserveCollection(p,state,pending.current,++serial.current,now);}
-    if(!pending.current.length&&!harvestAvailable(p,state)&&state.slots.every(Boolean)){const next={puzzle:p,state:{...state,phase:'lost' as const},actions};current.current=next;setRun(next);}
+    if(!pending.current.length&&!harvestAvailable(p,state)&&state.slots.every(Boolean)){const next={...r,puzzle:p,state:{...state,phase:'lost' as const},actions};current.current=next;setRun(next);}
    }
    setFlights(old=>old.length===pending.current.length&&old.every((c,i)=>c.id===pending.current[i].id)?old:[...pending.current]);
   },40);

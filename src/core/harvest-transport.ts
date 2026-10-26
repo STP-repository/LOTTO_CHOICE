@@ -1,13 +1,16 @@
 import {exposedPixels} from './puzzles';
 import type {HarvestBoard,HarvestState} from './puzzles';
 export interface Collection {id:number;index:number;slot:number;tokenId:number;color:number;started:number}
+export const collectionDuration=(finishing:boolean,reduced=false)=>reduced?(finishing?70:110):(finishing?140:360);
 // Reservations never alter the saved board or counter. Reloading cancels them safely.
 export function reserveCollection(p:HarvestBoard,s:HarvestState,pending:Collection[],id:number,started:number):Collection|null{
  if(s.phase!=='playing')return null;
+ if(pending.length>=(s.queue.length?12:20))return null;
  const locked=new Set(pending.map(v=>v.index)),exposed=exposedPixels(p,s.cells);
  for(let slot=0;slot<5;slot++){
   const token=s.slots[slot];if(!token)continue;
-  if(pending.some(v=>v.slot===slot&&v.tokenId===token.id))continue;
+  const reserved=pending.filter(v=>v.slot===slot&&v.tokenId===token.id).length;
+  if(reserved>=Math.min(token.remaining,s.queue.length?3:6))continue;
   const index=exposed.find(i=>!locked.has(i)&&s.cells[i]===token.color);
   if(index!==undefined)return {id,index,slot,tokenId:token.id,color:token.color,started};
  }
