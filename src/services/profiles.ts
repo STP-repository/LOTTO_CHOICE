@@ -36,3 +36,4 @@ export async function checkIdentityEpoch(){
  if(epoch>previous){const keys=Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)!);for(const k of keys)if(k===INDEX||k===LAST||LEGACY.includes(k)||k.startsWith('puzzles:')||k.startsWith('lotto:arcade')||k.includes(':profile:'))localStorage.removeItem(k);sessionStorage.removeItem(ACTIVE);current=undefined;localStorage.setItem(key,String(epoch));return true;}
  return false;
 }
+export function forgetDeletedProfile(){const id=currentProfile().id;for(const key of LEGACY)localStorage.removeItem(key);for(const key of Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)!))if(key.endsWith(":profile:"+id))localStorage.removeItem(key);localStorage.setItem(INDEX,JSON.stringify(listProfiles().filter(p=>p.id!==id)));if(localStorage.getItem(LAST)===id)localStorage.removeItem(LAST);sessionStorage.removeItem(ACTIVE);current=undefined;}

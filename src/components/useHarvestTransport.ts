@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import type {Dispatch,SetStateAction} from 'react';
 import {harvestAvailable} from '../core/puzzles';
 import type {HarvestPuzzle,HarvestState,EscapePuzzle,EscapeState} from '../core/puzzles';
@@ -9,15 +9,20 @@ type Run=({puzzle:EscapePuzzle;state:EscapeState}|{puzzle:HarvestPuzzle;state:Ha
 export interface Arrival {id:number;slot:number;color:number;remaining:number}
 export function useHarvestTransport(run:Run|null,setRun:Dispatch<SetStateAction<Run|null>>,epoch:number){
  const current=useRef(run),pending=useRef<Collection[]>([]),serial=useRef(0),[flights,setFlights]=useState<Collection[]>([]),[arrivals,setArrivals]=useState<Arrival[]>([]);
+ const delivered=useRef(new Set<number>()),cancelled=useRef(new Set<number>());
+ const onArrive=useCallback((id:number)=>{delivered.current.add(id);},[]);
+ const onCancel=useCallback((id:number)=>{cancelled.current.add(id);},[]);
  useEffect(()=>{current.current=run;},[run]);
  useEffect(()=>{
-  pending.current=[];setFlights([]);setArrivals([]);
+  pending.current=[];delivered.current.clear();cancelled.current.clear();setFlights([]);setArrivals([]);
   const arrivalTimers=new Set<ReturnType<typeof setTimeout>>();
   const timer=setInterval(()=>{
    const r=current.current;if(!r||r.puzzle.kind!=='harvest'||r.state.phase!=='playing'||document.hidden)return;
-   const p=r.puzzle;let state=r.state as HarvestState;const now=performance.now(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,duration=reduced?180:820;
+   const p=r.puzzle;let state=r.state as HarvestState;const now=performance.now();
+   pending.current=pending.current.filter(c=>!cancelled.current.has(c.id));cancelled.current.clear();
    let changed=false;const collected:PuzzleAction[]=[];
-   for(const c of pending.current.filter(c=>now-c.started>=duration)){
+   for(const c of pending.current.filter(c=>delivered.current.has(c.id))){
+    delivered.current.delete(c.id);
     const next=completeCollection(p,state,c);pending.current=pending.current.filter(v=>v.id!==c.id);
     if(next!==state){collected.push({type:'collect',...c});const arrival={id:c.id,slot:c.slot,color:c.color,remaining:next.slots[c.slot]?.remaining??0};setArrivals(old=>[...old.filter(v=>v.slot!==c.slot),arrival]);const t=setTimeout(()=>{setArrivals(old=>old.filter(v=>v.id!==arrival.id));arrivalTimers.delete(t);},340);arrivalTimers.add(t);state=next;changed=true;}
    }
@@ -32,5 +37,5 @@ export function useHarvestTransport(run:Run|null,setRun:Dispatch<SetStateAction<
   },40);
   return()=>{clearInterval(timer);for(const t of arrivalTimers)clearTimeout(t);pending.current=[];};
  },[run?.puzzle,epoch,setRun]);
- return {flights,arrivals};
+ return {flights,arrivals,onArrive,onCancel};
 }

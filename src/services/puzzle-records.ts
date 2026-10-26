@@ -1,3 +1,4 @@
+import {HARVEST_VERSION} from '../core/harvest-art';
 import {personalStorage,currentProfile} from './profiles';
 import {verifyPuzzleProof} from '../core/puzzle-proof';
 import type {PuzzleAction} from '../core/puzzle-proof';
@@ -8,8 +9,8 @@ export function puzzleRecords():PuzzleRecord[]{try{const rows=JSON.parse(persona
 export function savePuzzleRecord(kind:PuzzleKind,stage:string,version:string,actions:PuzzleAction[]){const proof=verifyPuzzleProof(kind,stage,version,actions),rows=puzzleRecords(),id=`${version}:${kind}:${stage}`,old=rows.find(r=>r.id===id);if(old&&old.moves<=proof.moves)return old;const r={id,kind,stage,version,...proof,actions,at:new Date().toISOString()};personalStorage.setItem(KEY,JSON.stringify([r,...rows.filter(v=>v.id!==id)].slice(0,500)));return r;}
 export async function syncPuzzleRecords(){
  const profile=currentProfile(),key='lotto-best-choice:cloud-token:v1';let token=personalStorage.getItem(key);if(!token){token=crypto.randomUUID()+crypto.randomUUID();personalStorage.setItem(key,token);}
- for(const record of puzzleRecords().filter(r=>!r.synced).reverse()){
-  const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({epoch:Number(localStorage.getItem("lotto-best-choice:identity-epoch:v1")||0),id:profile.id,token,name:profile.name,kind:record.kind,stage:record.stage,version:record.version,actions:record.actions}),signal:AbortSignal.timeout(15000)});
+ for(const record of puzzleRecords().filter(r=>!r.synced&&(r.kind!=='harvest'||r.version===HARVEST_VERSION)).reverse()){
+  const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({epoch:Number(localStorage.getItem("lotto-best-choice:identity-epoch:v1")||0),id:profile.id,token,profileRevision:Number(personalStorage.getItem("profile:revision:v1")||0),name:profile.name,kind:record.kind,stage:record.stage,version:record.version,actions:record.actions}),signal:AbortSignal.timeout(15000)});
   if(!res.ok)throw Error('공개 기록 서버에 연결하지 못했습니다. 내 기록은 기기에 보관됩니다.');
   personalStorage.setItem(KEY,JSON.stringify(puzzleRecords().map(r=>r.id===record.id?{...r,actions:[],synced:true}:r)));
   window.dispatchEvent(new Event('puzzle-records-updated'));

@@ -12,7 +12,7 @@ test('지정 단계 두 게임의 재현성·상한·해결 가능성',()=>{
   assert.ok(verifyEscape(e,e.solution),`escape ${stage}:${i}`);assert.ok(verifyHarvest(h,h.solution),`harvest ${stage}:${i}`);
   assert.deepEqual(generateEscape(stage,seed),e);assert.deepEqual(generateHarvest(stage,seed),h);
   assert.ok(e.blocks.length<=12&&e.walls.length<=5&&e.solution.length<=220&&e.rating.withinCap);
-  assert.ok(h.width<=19&&h.cells.filter(c=>c>=0).length<=400&&h.tokens.length<=220&&h.rating.withinCap);
+  assert.ok(h.width<=34&&h.cells.filter(c=>c>=0).length<=1200&&h.tokens.length<=220&&h.rating.withinCap);
   assert.equal(initialHarvest(h).slots.length,5);
  }
 });

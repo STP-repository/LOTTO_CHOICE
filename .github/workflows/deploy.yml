@@ -42,7 +42,7 @@ jobs:
       - name: Set up game-server lib for sync test
         run: |
           mkdir -p game-server/lib
-          cp src/core/puzzles.ts src/core/harvest-transport.ts src/core/puzzle-proof.ts game-server/lib/
+          cp src/core/puzzles.ts src/core/harvest-art.ts src/core/harvest-transport.ts src/core/puzzle-proof.ts game-server/lib/
       - name: Tests
         # Latest check is intentionally strict: fail stale data rather than silently publish.
         run: npm test

@@ -1,3 +1,5 @@
+import {characterPixels,HARVEST_THEMES,HARVEST_VERSION} from './harvest-art';
+export {HARVEST_VERSION,HARVEST_PALETTE} from './harvest-art';
 // Independent rules shared by generation, solution verification, and the UI.
 export type PuzzleKind='escape'|'harvest';
 export const GENERATOR_VERSION='calm-puzzles-v1';
@@ -89,46 +91,19 @@ export function harvestTick(p:HarvestBoard,s:HarvestState):HarvestState{
  return {...s,cells,slots,collected:s.collected+1,last:{index,color:token.color,slot},phase:cells.every(v=>v<0)?'won':'playing'};
 }
 export function verifyHarvest(p:HarvestBoard,solution:number[]){let state=initialHarvest(p);for(const id of solution){const placed=placeToken(p,state,id);if(!placed)return false;state=placed;for(let tick=0;tick<=p.cells.length;tick++){const next=harvestTick(p,state);if(next===state)break;state=next;if(state.phase==='won')return true;if(state.phase==='lost')return false;}}return state.phase==='won';}
-export const HARVEST_PALETTE=['#fa8754','#56cdf0','#343143','#ffdb62','#76ce83','#fff2dc'];
-const themeNames=['별빛 꽃','달빛 고래','구름 여우','우주 로켓','햇살 딸기','숲속 버섯','오로라 행성','꽃잎 나비'];
-const harvestArt=[
- ['............','....222.....','...20002....','..2055502...','...20002....','.222222222..','20002320002.','20552325502.','20002320002.','.222232222..','.....4......','....444.....'],
- ['............','............','...22222....','..2111112...','.211511112..','211111111122','211111111121','211111111122','.211111112..','..2222222...','....11......','............'],
- ['.22......22.','.202....202.','.2002..2002.','.2000220002.','..20000002..','.2000000002.','200520025002','200550055002','.205555502..','..2555522...','...2222.....','............'],
- ['.....22.....','....2002....','...200002...','...205502...','...251152...','...251152...','..22055022..','.2120000212.','211200002112','222222222222','....0330....','.....33.....'],
- ['....4444....','..44444444..','...444444...','..22222222..','.2000000002.','200300030002','200000000002','200030030002','.2000000002.','..20030002..','...200002...','....2222....'],
- ['............','....2222....','...200002...','..20500502..','.2000000002.','205000050002','200005000002','222222222222','....2552....','....2552....','...255552...','...222222...'],
- ['............','....2222....','...211112...','..21111112..','.2211111122.','200222222002','200000000002','.2222222222.','..21111112..','...211112...','....2222....','............'],
- ['............','.222....222.','20002..20002','203002203002','200002200002','.2002220002.','..22222222..','.2002220002.','200002200002','203002203002','.222....222.','............']
-];
+const themeNames=HARVEST_THEMES;
 function generateHarvestCandidate(stage:string,seed:number,adjust=0):HarvestPuzzle{
- const level=difficulty(stage,adjust),rand=puzzleRandom(seed),width=12+level.target+Math.floor(rand()*3),height=width,theme=Math.floor(rand()*8),colors=3+Math.min(3,level.target),phase=rand()*Math.PI*2,stretch=.75+rand()*.35,cells=Array<number>(width*height).fill(-1);
- for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-  const nx=(x+.5-width/2)/(width/2),ny=(y+.5-height/2)/(height/2),r=Math.hypot(nx,ny),angle=Math.atan2(ny,nx);let inside=false,color=0;
-  if(theme===0){inside=r<.52+.22*Math.cos((5+seed%3)*angle+phase)||Math.abs(nx)<.09&&ny>.1;color=ny>.35?2:Math.floor((angle+Math.PI)*colors/(Math.PI*2));}
-  if(theme===1){inside=(nx*nx/.78+ny*ny/.28<1)||nx>.5&&Math.abs(ny)<(nx-.45)*.9;color=ny>.08?1:nx<-.25?2:0;}
-  if(theme===2){inside=(Math.abs(nx)<.7&&ny>-.1&&r<.82)||Math.abs(nx)>.3&&ny<0&&ny>-.9&&Math.abs(nx)<.72;color=Math.abs(nx)<.2&&ny>.1?1:ny<-.2?2:0;}
-  if(theme===3){inside=(Math.abs(nx)<.34&&Math.abs(ny)<.8)||Math.abs(ny)<.15&&Math.abs(nx)<.9;color=r<.22?1:ny<-.4?2:Math.abs(nx)>.35?3%colors:0;}
-  if(theme===4){inside=r<.8*stretch||Math.abs(nx-.2)<.15&&ny<-.5&&ny>-.9;color=r<.6?Math.floor((angle+Math.PI)*3+phase)%colors:1;}
-  if(theme===5){inside=Math.abs(nx)*.8+Math.abs(ny)<.87||Math.abs(nx+.45)*1.3+Math.abs(ny-.3)<.38;color=Math.floor((nx-ny+2)*3+phase)%colors;}
-  if(theme===6){inside=ny>.05+.18*Math.sin(nx*4+phase)&&ny<.7&&Math.abs(nx)<.85||Math.hypot(nx+.4,ny+.45)<.22;color=ny<0?2:ny>.35?1:0;}
-  if(theme===7){inside=((nx+.42)**2/.24+ny**2/.6<1)||((nx-.42)**2/.24+ny**2/.6<1)||Math.abs(nx)<.07&&Math.abs(ny)<.75;color=Math.floor(Math.abs(nx)*6+ny*2+phase+12)%colors;}
-  // Readable outlined pixel artwork; empty space remains real traversable space.
-  const ax=Math.min(11,Math.floor(x/width*12)),ay=Math.min(11,Math.floor(y/height*12));
-  const value=harvestArt[theme][ay][seed%2?11-ax:ax];
-  if(value!=='.')cells[y*width+x]=Number(value);
-  else if((x===0||x===width-1)&&(y===0||y===height-1)&&rand()<.5)cells[y*width+x]=3;
- }
+ const level=difficulty(stage,adjust),rand=puzzleRandom(seed),width=28+Math.min(4,level.target)+Math.floor(rand()*2),height=width,theme=Math.floor(rand()*HARVEST_THEMES.length),cells=characterPixels(width,height,theme,seed);
  if(cells.filter(c=>c>=0).length<20)throw Error('그림 생성에 실패했습니다.');
  const working=[...cells],tokens:Token[]=[],solution:number[]=[];let iterations=0;
- while(working.some(v=>v>=0)&&iterations++<width*height){const exposed=exposedPixels({width,height},working),color=working[exposed[0]],limit=3+Math.floor(rand()*(5+level.target)),id=tokens.length+1;let taken=0;
+ while(working.some(v=>v>=0)&&iterations++<width*height){const exposed=exposedPixels({width,height},working),color=working[exposed[0]],limit=12+Math.floor(rand()*(18+level.target*2)),id=tokens.length+1;let taken=0;
   while(taken<limit){const index=exposedPixels({width,height},working).find(i=>working[i]===color);if(index===undefined)break;working[index]=-1;taken++;}
   if(!taken)throw Error('수거 순서 생성 실패');tokens.push({id,color,remaining:taken});solution.push(id);
  }
  const board={width,height,cells,tokens};if(!verifyHarvest(board,solution))throw Error('수거 퍼즐 해결 검증 실패');
- const branching=new Set(exposedPixels(board,cells).map(i=>cells[i])).size,blocking=cells.filter(c=>c>=0).length-exposedPixels(board,cells).length,rating={estimate:tokens.length,branching,blocking,score:tokens.length+blocking*.15+branching*2,target:level.target,withinCap:tokens.length<=220&&cells.filter(c=>c>=0).length<=400};
+ const branching=new Set(exposedPixels(board,cells).map(i=>cells[i])).size,blocking=cells.filter(c=>c>=0).length-exposedPixels(board,cells).length,rating={estimate:tokens.length,branching,blocking,score:tokens.length+blocking*.15+branching*2,target:level.target,withinCap:tokens.length<=220&&cells.filter(c=>c>=0).length<=1200};
  if(!rating.withinCap)throw Error('그림 난이도 상한 초과');
- return {...board,kind:'harvest',stage,seed,version:GENERATOR_VERSION,solution,rating,signature:canonicalGrid(Array.from({length:height},(_,y)=>cells.slice(y*width,(y+1)*width).map(c=>c<0?'.':`c${c}`)))+'|'+tokens.map(t=>t.remaining).join(','),verified:true,theme:themeNames[theme]};
+ return {...board,kind:'harvest',stage,seed,version:HARVEST_VERSION,solution,rating,signature:canonicalGrid(Array.from({length:height},(_,y)=>cells.slice(y*width,(y+1)*width).map(c=>c<0?'.':`c${c}`)))+'|'+tokens.map(t=>t.remaining).join(','),verified:true,theme:themeNames[theme]};
 }
 export function generateHarvest(stage:string,seed:number,adjust=0):HarvestPuzzle{
  for(let attempt=0;attempt<12;attempt++){
@@ -138,5 +113,5 @@ export function generateHarvest(stage:string,seed:number,adjust=0):HarvestPuzzle
  const cells=Array.from({length:width*height},(_,i)=>{const x=i%width,y=Math.floor(i/width);return x>1&&x<10&&y>1&&y<10?(y+offset)%6:-1;});
  const tokens=Array.from({length:8},(_,i)=>({id:i+1,color:(i+2+offset)%6,remaining:8})),solution=tokens.map(t=>t.id),board={width,height,cells,tokens};
  if(!verifyHarvest(board,solution))throw Error('대체 수거 퍼즐 해결 검증 실패');
- return {...board,kind:'harvest',stage,seed,version:GENERATOR_VERSION,solution,rating:{estimate:8,branching:6,blocking:36,score:26,target,withinCap:true},signature:canonicalGrid(Array.from({length:height},(_,y)=>cells.slice(y*width,(y+1)*width).map(c=>c<0?'.':`c${c}`))),verified:true,theme:'무지개 정원'};
+ return {...board,kind:'harvest',stage,seed,version:HARVEST_VERSION,solution,rating:{estimate:8,branching:6,blocking:36,score:26,target,withinCap:true},signature:canonicalGrid(Array.from({length:height},(_,y)=>cells.slice(y*width,(y+1)*width).map(c=>c<0?'.':`c${c}`))),verified:true,theme:'무지개 정원'};
 }
