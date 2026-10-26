@@ -1,5 +1,1 @@
-{
-  "checkedAt": "2026-10-25T00:20:18.498Z",
-  "ok": true,
-  "errors": []
-}
+{"checkedAt":"2026-10-26T00:36:58.891Z","ok":false,"errors":["공식 확인 실패: 미러로 기존 공식 이력을 덮어쓰지 않습니다."],"retained":true}
