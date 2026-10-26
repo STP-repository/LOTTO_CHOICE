@@ -4,7 +4,7 @@ export const GENERATOR_VERSION='calm-puzzles-v1';
 export const PALETTE=['#ff806b','#54c8ef','#b89aff','#ffd064','#69dbb4','#ee97cd'];
 export function hashSeed(value:string){let h=2166136261;for(const c of value)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h;}
 export function puzzleRandom(seed:number){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
-export function difficulty(stage:string,adjust=0){const n=BigInt(stage);if(n<1n)throw Error('단계는 1 이상이어야 합니다.');const tier=n<=30n?0:n<=100n?1:n<=300n?2:n<=500n?3:n<=1000n?4:5;const rest=n%7n===0n;return {tier,label:['입문','쉬움','보통','적당한 도전','안정화','난이도 상한 고정'][tier],target:Math.max(0,Math.min(5,tier+(rest?-1:0)+Math.max(-1,Math.min(0,adjust)))),maxBlocks:12,maxWalls:5,maxSolution:220};}
+export function difficulty(stage:string,adjust=0){const n=BigInt(stage);if(n<1n)throw Error('단계는 1 이상이어야 합니다.');const tier=n<=5n?0:n<=20n?1:n<=80n?2:n<=250n?3:n<=700n?4:5;const rest=n%7n===0n;return {tier,label:['입문','쉬움','보통','적당한 도전','안정화','난이도 상한 고정'][tier],target:Math.max(0,Math.min(5,tier+(rest?-1:0)+Math.max(-1,Math.min(0,adjust)))),maxBlocks:12,maxWalls:5,maxSolution:220};}
 export type Direction='up'|'right'|'down'|'left';
 export const DIRECTIONS:Direction[]=['up','right','down','left'];
 const delta={up:[0,-1],right:[1,0],down:[0,1],left:[-1,0]} as const;
@@ -106,7 +106,7 @@ function generateHarvestCandidate(stage:string,seed:number,adjust=0):HarvestPuzz
  }
  if(cells.filter(c=>c>=0).length<20)throw Error('그림 생성에 실패했습니다.');
  const working=[...cells],tokens:Token[]=[],solution:number[]=[];let iterations=0;
- while(working.some(v=>v>=0)&&iterations++<width*height){const exposed=exposedPixels({width,height},working),color=working[exposed[Math.floor(rand()*exposed.length)]],limit=3+Math.floor(rand()*(5+level.target)),id=tokens.length+1;let taken=0;
+ while(working.some(v=>v>=0)&&iterations++<width*height){const exposed=exposedPixels({width,height},working),color=working[exposed[0]],limit=3+Math.floor(rand()*(5+level.target)),id=tokens.length+1;let taken=0;
   while(taken<limit){const index=exposedPixels({width,height},working).find(i=>working[i]===color);if(index===undefined)break;working[index]=-1;taken++;}
   if(!taken)throw Error('수거 순서 생성 실패');tokens.push({id,color,remaining:taken});solution.push(id);
  }

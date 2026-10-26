@@ -7,7 +7,7 @@ export function reserveCollection(p:HarvestBoard,s:HarvestState,pending:Collecti
  const locked=new Set(pending.map(v=>v.index)),exposed=exposedPixels(p,s.cells);
  for(let slot=0;slot<5;slot++){
   const token=s.slots[slot];if(!token)continue;
-  if(token.remaining<=pending.filter(v=>v.slot===slot&&v.tokenId===token.id).length)continue;
+  if(pending.some(v=>v.slot===slot&&v.tokenId===token.id))continue;
   const index=exposed.find(i=>!locked.has(i)&&s.cells[i]===token.color);
   if(index!==undefined)return {id,index,slot,tokenId:token.id,color:token.color,started};
  }
