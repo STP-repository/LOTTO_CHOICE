@@ -2,6 +2,8 @@ export interface LocalProfile {id:string;name:string;createdAt:string}
 const INDEX='lotto-best-choice:profiles:v1',LAST='lotto-best-choice:last-profile:v1',ACTIVE='lotto-best-choice:tab-profile:v1';
 const LEGACY=['lotto-best-choice:recent-game-names:v1','lotto-best-choice:active-game-roster:v1','lotto-best-choice:qr-history:v1','lotto-best-choice:saved-numbers:v1','lotto:arcade-scores:v1'];
 let current:LocalProfile|undefined;
+let resetNoticeShown=false;
+export function notifyIdentityExpired(){if(!resetNoticeShown){resetNoticeShown=true;window.dispatchEvent(new Event('puzzle-identity-expired'));}}
 const scoped=(key:string,id:string)=>`${key}:profile:${id}`;
 export function listProfiles():LocalProfile[]{try{const rows=JSON.parse(localStorage.getItem(INDEX)||'[]');return Array.isArray(rows)?rows.filter(p=>p&&typeof p.id==='string'&&/^[a-z0-9-]{10,}$/.test(p.id)&&typeof p.name==='string'&&p.name.length>0&&p.name.length<=20&&Number.isFinite(Date.parse(p.createdAt))).slice(0,20):[];}catch{return [];}}
 function makeProfile(name?:string):LocalProfile{const id=crypto.randomUUID();return {id,name:name?.trim().slice(0,20)||`방문자 ${id.slice(0,4).toUpperCase()}`,createdAt:new Date().toISOString()};}

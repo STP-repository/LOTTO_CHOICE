@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {generateColorStage,colorInterlocks,verifyColorStage} from '../src/core/color-block-stages';
+import {generateColorStage as legacy} from '../src/core/color-block-legacy';
+import {hashSeed,GENERATOR_VERSION} from '../src/core/puzzles';import {verifyPuzzleProof} from '../src/core/puzzle-proof';
+test('초반부터 독립 탈출만으로 풀리지 않는 상호 차단 판이며 해결 경로는 유효하다',()=>{const signatures=new Set<string>();for(let i=1;i<=100;i++){const stage=String(i),p=generateColorStage(stage,hashSeed(`${GENERATOR_VERSION}:escape:${stage}`));assert.equal(p.pieces.length,9);assert.ok(colorInterlocks(p).stuck>=4,stage);assert.ok(verifyColorStage(p,p.solution),stage);assert.ok(p.rating.withinCap);signatures.add(p.signature);}assert.ok(signatures.size>=95);});
+test('상한 이후 동일 시드에서 난이도·구조가 계속 커지지 않으며 v1 기록도 검증한다',()=>{const a=generateColorStage('1001',42);for(const stage of ['5000','30000','100000']){const b=generateColorStage(stage,42);assert.equal(b.signature,a.signature);assert.deepEqual(b.rating,a.rating);}const version='color-block-escape-v1',p=legacy('1',hashSeed(`${version}:escape:1`));assert.ok(verifyPuzzleProof('escape','1',version,p.solution.map(m=>({type:'move',...m}))).moves>0);});

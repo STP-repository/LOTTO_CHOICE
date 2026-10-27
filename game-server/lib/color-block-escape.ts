@@ -1,12 +1,12 @@
 /** Color Block Escape: occupied-cell geometry, independent of the retired rectangle engine. */
-export const COLOR_BLOCK_VERSION='color-block-escape-v1';
+export const COLOR_BLOCK_VERSION='color-block-escape-v2';
 export type Cell=readonly[number,number];
 export type Side='up'|'right'|'down'|'left';
 export interface Piece {id:number;color:number;x:number;y:number;cells:Cell[];axis?:'horizontal'|'vertical';locked?:boolean}
 export interface Gate {id:number;side:Side;at:number;width:number;color:number;open:boolean}
 export interface Board {width:number;height:number;walls:Cell[];pieces:Piece[];gates:Gate[]}
-export interface EscapeFlight {id:number;gateId:number;direction:Side}
-export interface State {pieces:Piece[];flights:EscapeFlight[];moves:number;phase:'playing'|'won'}
+export interface EscapeFlight {id:number;gateId:number;direction:Side;kind?:'burst'}
+export interface State {pieces:Piece[];flights:EscapeFlight[];moves:number;phase:'playing'|'won';brokenWalls?:Cell[]}
 export const SHAPES:Record<string,Cell[]>={single:[[0,0]],domino:[[0,0],[0,1]],long:[[0,0],[0,1],[0,2]],square:[[0,0],[1,0],[0,1],[1,1]],rectangle:[[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]],L:[[0,0],[0,1],[0,2],[1,2]],T:[[0,0],[1,0],[2,0],[1,1]]};
 const vectors:Record<Side,Cell>={up:[0,-1],right:[1,0],down:[0,1],left:[-1,0]};
 const key=(x:number,y:number)=>`${x},${y}`;
@@ -20,7 +20,7 @@ export function validateBoard(b:Board){
  for(const g of b.gates){const span=g.side==='up'||g.side==='down'?b.width:b.height;if(!vectors[g.side]||gateIds.has(g.id)||!Number.isInteger(g.at)||!Number.isInteger(g.width)||g.at<0||g.width<1||g.at+g.width>span||!Number.isInteger(g.color)||g.color<0)throw Error('출구 정보가 잘못되었습니다.');gateIds.add(g.id);}
  return true;
 }
-function blocked(b:Board,s:State,p:Piece){const cells=new Set([...b.walls,...s.pieces.filter(x=>x.id!==p.id).flatMap(occupied)].map(([x,y])=>key(x,y)));return occupied(p).some(([x,y])=>cells.has(key(x,y)));}
+function blocked(b:Board,s:State,p:Piece){const walls=b.walls.filter(([x,y])=>!s.brokenWalls?.some(([a,c])=>x===a&&y===c));const cells=new Set([...walls,...s.pieces.filter(x=>x.id!==p.id).flatMap(occupied)].map(([x,y])=>key(x,y)));return occupied(p).some(([x,y])=>cells.has(key(x,y)));}
 function matchingGate(b:Board,s:State,p:Piece,direction:Side){
  const [dx,dy]=vectors[direction],cells=occupied(p),horizontal=direction==='left'||direction==='right';
  if(!cells.some(([x,y])=>direction==='up'?y===0:direction==='down'?y===b.height-1:direction==='left'?x===0:x===b.width-1))return;

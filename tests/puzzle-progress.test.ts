@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {loadPuzzleStage,savePuzzleStage} from '../src/services/puzzle-progress';
+test('두 게임은 스테이지 번호만 보존하고 과거 보드·수거·실패 상태를 이어서 불러오지 않는다',()=>{const rows=new Map<string,string>(),storage={getItem:(k:string)=>rows.get(k)??null,setItem:(k:string,v:string)=>{rows.set(k,v);}};
+ for(const key of ['escape','harvest']){rows.set(key,JSON.stringify({puzzle:{stage:'37'},state:{moves:92,phase:'lost'},actions:[{id:1}]}));assert.equal(loadPuzzleStage(key,storage),'37');assert.ok(savePuzzleStage(key,'37','new',storage));assert.deepEqual(JSON.parse(rows.get(key)!),{stage:'37',version:'new'});assert.equal(loadPuzzleStage(key,storage),'37');}rows.set('escape','broken');assert.equal(loadPuzzleStage('escape',storage),'1');assert.equal(loadPuzzleStage('harvest',storage),'37');assert.equal(savePuzzleStage('escape','0','new',storage),false);
+});

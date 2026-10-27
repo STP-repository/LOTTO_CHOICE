@@ -1,4 +1,4 @@
-import {currentProfile,personalStorage,renameProfile,forgetDeletedProfile} from './profiles';
+import {currentProfile,personalStorage,renameProfile,forgetDeletedProfile,notifyIdentityExpired} from './profiles';
 const DELETIONS='lotto-best-choice:cloud-ticket-deletions:v1';
 export function queueCloudTicketDeletion(id:string){try{const ids=JSON.parse(personalStorage.getItem(DELETIONS)||'[]');personalStorage.setItem(DELETIONS,JSON.stringify([...new Set([...ids,id])].slice(-100)));}catch{}}
 const ENDPOINT='https://starseed-guardians-coop-20261022.fairfig7.chatgpt.site/api/records';
@@ -12,7 +12,7 @@ export function startCloudRecords(){
  async function sync(){if(running){pending=true;return;}if(!navigator.onLine)return;running=true;
   try{const deleted=read(DELETIONS,[]),names=read(NAMES,[]),tickets=read(HISTORY,[]),name=currentProfile().name,hash=JSON.stringify({names,tickets,name});const changed=hash!==last;
    const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({epoch:Number(localStorage.getItem("lotto-best-choice:identity-epoch:v1")||0),id:profile.id,token,name,profileRevision:Number(personalStorage.getItem("profile:revision:v1")||0),names:changed?names:[],tickets:changed?tickets:[],deleteTickets:deleted}),signal:AbortSignal.timeout(12000)});
-   if(res.status===410){forgetDeletedProfile();window.location.reload();return;}if(!res.ok)return;const data=await res.json();if(data.profileName&&data.profileName!==currentProfile().name)renameProfile(data.profileName);if(String(data.profileRevision??0)!==personalStorage.getItem('profile:revision:v1'))personalStorage.setItem('profile:revision:v1',String(data.profileRevision??0));last=hash;if(deleted.length){const pending=read(DELETIONS,[]).filter((id:string)=>!deleted.includes(id));personalStorage.setItem(DELETIONS,JSON.stringify(pending));}
+   if(res.status===410){forgetDeletedProfile();window.location.reload();return;}if(res.status===409){notifyIdentityExpired();return;}if(!res.ok)return;const data=await res.json();if(data.profileName&&data.profileName!==currentProfile().name)renameProfile(data.profileName);if(String(data.profileRevision??0)!==personalStorage.getItem('profile:revision:v1'))personalStorage.setItem('profile:revision:v1',String(data.profileRevision??0));last=hash;if(deleted.length){const pending=read(DELETIONS,[]).filter((id:string)=>!deleted.includes(id));personalStorage.setItem(DELETIONS,JSON.stringify(pending));}
    const transform=(name:string)=>{const c=data.nameChanges?.find((n:any)=>n.name===name||n.replacement===name);return c?.deleted?null:c?.replacement??name;};
    const nextNames=[...new Set((Array.isArray(names)?names:[]).map(transform).filter(Boolean))];
    if(JSON.stringify(nextNames)!==JSON.stringify(names))personalStorage.setItem(NAMES,JSON.stringify(nextNames));
