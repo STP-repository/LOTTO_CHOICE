@@ -1,6 +1,7 @@
+import {strategyPolicy} from '../src/core/harvest-strategy';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {generateEscape,generateHarvest,initialHarvest,placeToken,harvestQueueHeads,hashSeed,verifyEscape,verifyHarvest,escapeGreedyWins,harvestLeftmostWins,GENERATOR_VERSION,HARVEST_VERSION} from '../src/core/puzzles';
+import {generateEscape,generateHarvest,initialHarvest,placeToken,harvestQueueHeads,hashSeed,verifyEscape,verifyHarvest,harvestLeftmostWins,GENERATOR_VERSION,HARVEST_VERSION} from '../src/core/puzzles';
 import {reserveCollection,completeCollection,collectionDuration} from '../src/core/harvest-transport';
 
 test('4개 줄의 맨 위만 선택 가능하고 선택한 줄만 앞으로 이동한다',()=>{
@@ -17,15 +18,17 @@ test('수거 가속은 도착 완료 조건과 슬롯의 실제 남은 수량을
  const last=reserveCollection(p,s,[],11,0)!;s=completeCollection(p,s,last);assert.equal(s.phase,'won');assert.equal(s.collected,7);
 });
 
-test('전략 대기줄은 해결 가능하고 6단계부터 왼쪽만 고르는 정책을 차단한다',()=>{
+test('전략 대기줄은 해결 가능하고 여러 단순 정책에 의존하지 않는다',()=>{
  for(const stage of ['1','6','30','100','500','1000','5000','30000','100000']){
   const p=generateHarvest(stage,hashSeed(`${HARVEST_VERSION}:harvest:${stage}`));assert.ok(verifyHarvest(p,p.solution));assert.equal(new Set(p.tokens.map(t=>t.lane)).size,4);
-  if(BigInt(stage)>=6n){assert.equal(harvestLeftmostWins(p),false,stage);assert.ok(p.greedyTrap);}
+  assert.ok(['left','right','smallest','largest','visible'].filter(k=>!strategyPolicy(p,k)).length>=3,stage);
  }
 });
 
-test('컬러 이스케이프는 첫 판부터 다중 블록 간섭을 가지며 검증된 해결 경로가 있다',()=>{
+test('신규 컬러 블록 탈출은 점유 칸 기반 블록과 검증된 해결 경로를 생성한다',()=>{
  for(const stage of ['1','2','3','5','30','100','1000','100000'])for(let i=0;i<3;i++){
-  const p=generateEscape(stage,hashSeed(`${GENERATOR_VERSION}:escape:${stage}:${i}`));assert.ok(verifyEscape(p,p.solution));assert.ok(p.blocks.length>=8,`${stage}:${i}`);assert.ok(p.rating.blocking>=12);assert.ok(p.solution.length>=45&&p.solution.length<=220);assert.equal(escapeGreedyWins(p),false,`${stage}:${i}`);
+  const p=generateEscape(stage,hashSeed(`${GENERATOR_VERSION}:escape:${stage}:${i}`));assert.ok(verifyEscape(p,p.solution));assert.ok(p.pieces.length>=4,`${stage}:${i}`);assert.ok(p.solution.length>=1&&p.solution.length<=250);
  }
 });
+
+

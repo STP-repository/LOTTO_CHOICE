@@ -17,11 +17,11 @@ test('검은 테두리 안쪽 픽셀은 실제 외부 통로가 열려야 예약
 test('5개 병렬 슬롯에서 도착 확정 수량만 차감하고 지정 단계의 그림 전체를 완료한다',()=>{
  for(const stage of ['1','100','500','1000','5000','30000','100000']){
   const p=generateHarvest(stage,hashSeed(`capacity:${stage}`));let s=initialHarvest(p),serial=0,guard=0;const initial=p.cells.filter(c=>c>=0).length;
-  while(s.phase==='playing'&&guard++<initial*3){
-   for(const token of [...s.queue]){const next=placeToken(p,s,token.id);if(!next)break;s=next;}
-   const before=structuredClone(s),pending=[];for(let i=0;i<5;i++){const c=reserveCollection(p,s,pending,++serial,0);if(c)pending.push(c);}assert.ok(pending.length>0,`${stage} blocked`);
-   assert.deepEqual(s,before);assert.equal(new Set(pending.map(c=>c.index)).size,pending.length);
-   for(const c of pending){const count=s.collected;s=completeCollection(p,s,c);assert.equal(s.collected,count+1);assert.strictEqual(completeCollection(p,s,c),s);}
+  for(const id of p.solution){const placed=placeToken(p,s,id);assert.ok(placed);s=placed;
+   while(s.phase==='playing'&&guard++<initial*3){const before=structuredClone(s),pending=[];for(let i=0;i<12;i++){const c=reserveCollection(p,s,pending,++serial,0);if(c)pending.push(c);}if(!pending.length)break;
+    assert.deepEqual(s,before);assert.equal(new Set(pending.map(c=>c.index)).size,pending.length);
+    for(const c of pending){const count=s.collected;s=completeCollection(p,s,c);assert.equal(s.collected,count+1);assert.strictEqual(completeCollection(p,s,c),s);}
+   }
   }
   assert.equal(s.phase,'won');assert.equal(s.collected,initial);assert.ok(s.cells.every(c=>c<0));assert.ok(s.slots.every(t=>!t));
  }

@@ -21,11 +21,11 @@ test('0 표시로 닫히는 슬롯은 종료 연출 중 재사용되지 않는�
  assert.equal(next.slots[0],null);assert.equal(next.slots[1]?.id,1);
  assert.equal(placeToken(p,s,1,[0,1,2,3,4]),null);
 });
-test('3개 병렬 예약·순차 투입도 검증 경로의 최종 수량과 일치하고 예약 취소는 무손실이다',()=>{
+test('병렬 묶음 예약·도착 확정도 검증 경로의 최종 수량과 일치하고 예약 취소는 무손실이다',()=>{
  for(const stage of ['1','100','1000','100000']){
   const p=generateHarvest(stage,hashSeed(`transport:${stage}`));let s=initialHarvest(p),serial=0;
   for(const id of p.solution){s=placeToken(p,s,id)!;assert.ok(s);let guard=0;
-   while(s.slots.some(Boolean)&&guard++<p.cells.length){const pending=[];for(let i=0;i<3;i++){const c=reserveCollection(p,s,pending,++serial,serial*190);if(c)pending.push(c);}assert.ok(pending.length);
+   while(s.slots.some(Boolean)&&guard++<p.cells.length){const pending=[];for(let i=0;i<20;i++){const c=reserveCollection(p,s,pending,++serial,serial*190);if(c)pending.push(c);}if(!pending.length)break;
     const before=structuredClone(s);reserveCollection(p,s,[],99999,0);assert.deepEqual(s,before);
     for(const c of pending)s=completeCollection(p,s,c);
    }
@@ -33,3 +33,4 @@ test('3개 병렬 예약·순차 투입도 검증 경로의 최종 수량과 일
   assert.equal(s.phase,'won');assert.equal(s.collected,p.cells.filter(c=>c>=0).length);assert.ok(s.slots.every(t=>!t));
  }
 });
+

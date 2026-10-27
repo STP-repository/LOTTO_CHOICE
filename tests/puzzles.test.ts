@@ -11,7 +11,7 @@ test('지정 단계 두 게임의 재현성·상한·해결 가능성',()=>{
   const seed=hashSeed(`${stage}:${i}`),e=generateEscape(stage,seed),h=generateHarvest(stage,seed);
   assert.ok(verifyEscape(e,e.solution),`escape ${stage}:${i}`);assert.ok(verifyHarvest(h,h.solution),`harvest ${stage}:${i}`);
   assert.deepEqual(generateEscape(stage,seed),e);assert.deepEqual(generateHarvest(stage,seed),h);
-  assert.ok(e.blocks.length<=12&&e.walls.length<=5&&e.solution.length<=220&&e.rating.withinCap);
+  assert.ok(e.pieces.length<=12&&e.walls.length<=5&&e.solution.length<=250&&e.rating.withinCap);
   assert.ok(h.width<=34&&h.cells.filter(c=>c>=0).length<=1200&&h.tokens.length<=220&&h.rating.withinCap);
   assert.equal(initialHarvest(h).slots.length,5);
  }
@@ -32,4 +32,5 @@ test('수거는 한 틱에 한 픽셀만 제거하고 빈 슬롯을 재사용한
  const p={width:2,height:1,cells:[0,0],tokens:[{id:1,color:0,remaining:2}]};let s=initialHarvest(p);s=placeToken(p,s,1)!;
  s=harvestTick(p,s);assert.equal(s.collected,1);assert.equal(s.slots[0]?.remaining,1);s=harvestTick(p,s);assert.equal(s.phase,'won');assert.equal(s.slots[0],null);
 });
+
 
