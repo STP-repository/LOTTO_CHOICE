@@ -3,7 +3,7 @@ import {personalStorage,currentProfile,notifyIdentityExpired} from './profiles';
 import {verifyPuzzleProof} from '../core/puzzle-proof';
 import type {PuzzleAction} from '../core/puzzle-proof';
 import type {PuzzleKind} from '../core/puzzles';
-const KEY='puzzles:records:v1',ENDPOINT='https://starseed-guardians-coop-20261022.fairfig7.chatgpt.site/api/puzzles';
+const KEY='puzzles:records:v1',ENDPOINT='https://starseed-guardians-coop-20261022.eogus3535.chatgpt.site/api/puzzles';
 export interface PuzzleRecord {id:string;kind:PuzzleKind;stage:string;version:string;moves:number;units:number;at:string;actions:PuzzleAction[];synced?:boolean;retired?:boolean;attempt?:string;items?:number;syncError?:string}
 export function puzzleRecords():PuzzleRecord[]{try{const rows=JSON.parse(personalStorage.getItem(KEY)||'[]');return Array.isArray(rows)?rows.filter(r=>r&&['escape','harvest'].includes(r.kind)&&typeof r.stage==='string'&&/^[1-9]\d{0,39}$/.test(r.stage)&&Array.isArray(r.actions)).slice(0,500):[];}catch{return [];}}
 export function savePuzzleRecord(kind:PuzzleKind,stage:string,version:string,actions:PuzzleAction[],attempt?:string):PuzzleRecord{const proof=verifyPuzzleProof(kind,stage,version,actions),rows=puzzleRecords(),id=`${version}:${kind}:${stage}`,old=rows.find(r=>r.id===id);if(old&&(old.attempt===attempt||!old.retired&&((old.items??0)<proof.items||(old.items??0)===proof.items&&old.moves<=proof.moves)))return old;const r={id,kind,stage,version,...proof,actions,attempt,at:new Date().toISOString()};personalStorage.setItem(KEY,JSON.stringify([r,...rows.filter(v=>v.id!==id)].slice(0,500)));return r;}

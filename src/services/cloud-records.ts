@@ -1,7 +1,7 @@
 import {currentProfile,personalStorage,renameProfile,forgetDeletedProfile,notifyIdentityExpired} from './profiles';
 const DELETIONS='lotto-best-choice:cloud-ticket-deletions:v1';
 export function queueCloudTicketDeletion(id:string){try{const ids=JSON.parse(personalStorage.getItem(DELETIONS)||'[]');personalStorage.setItem(DELETIONS,JSON.stringify([...new Set([...ids,id])].slice(-100)));}catch{}}
-const ENDPOINT='https://starseed-guardians-coop-20261022.fairfig7.chatgpt.site/api/records';
+const ENDPOINT='https://starseed-guardians-coop-20261022.eogus3535.chatgpt.site/api/records';
 const NAMES='lotto-best-choice:recent-game-names:v1',HISTORY='lotto-best-choice:qr-history:v1',ROSTER='lotto-best-choice:active-game-roster:v1',TOKEN='lotto-best-choice:cloud-token:v1';
 /** Only the active profile's own records leave this browser; credentials stay profile-scoped. */
 export function startCloudRecords(){

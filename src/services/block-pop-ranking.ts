@@ -1,6 +1,6 @@
 import {currentProfile,personalStorage,notifyIdentityExpired} from './profiles';
 import {replayPop,type PopState} from '../core/block-pop';
-const URL='https://starseed-guardians-coop-20261022.fairfig7.chatgpt.site/api/pop';
+const URL='https://starseed-guardians-coop-20261022.eogus3535.chatgpt.site/api/pop';
 export interface PopRank {name:string;score:number;moves:number;updated:number}
 export async function popRanking():Promise<PopRank[]>{const r=await fetch(URL,{cache:'no-store',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('랭킹 연결을 확인해 주세요.');return (await r.json()).rows;}
 type Pending={seed:number;actions:NonNullable<PopState['actions']>;score:number;at:number;id:string};
