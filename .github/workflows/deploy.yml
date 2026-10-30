@@ -18,24 +18,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Detect analysis input changes
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          analysis=true
+          if [ "$EVENT_NAME" = push ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- data public/data scripts src/core | grep -v '^src/core/block-pop.ts$' || true)
+            if [ -z "$changes" ]; then analysis=false; fi
+          fi
+          echo "analysis=$analysis" >> "$GITHUB_OUTPUT"
+          echo "Recalculate lottery analysis: $analysis (scheduled and manual runs always recalculate)"
       - name: Collect data (retain last good file on failure)
+        if: steps.scope.outputs.analysis == 'true'
         id: collect
         continue-on-error: true
         run: npm run data:update
       - name: Prepare full-history recommendations with fixed weights
+        if: steps.scope.outputs.analysis == 'true'
         run: npx tsx scripts/publish-advanced.ts
       - name: Compare candidate scales without changing default settings
+        if: steps.scope.outputs.analysis == 'true'
         run: npx tsx scripts/benchmark-candidates.ts
       - name: General walk-forward check with frozen weights
+        if: steps.scope.outputs.analysis == 'true'
         run: npx tsx scripts/verify-advanced.ts
       - name: Compare all six frozen recommendation settings
+        if: steps.scope.outputs.analysis == 'true'
         run: npx tsx scripts/verify-configurations.ts
       - name: Precompute ranked recommendations for instant public display
+        if: steps.scope.outputs.analysis == 'true'
         run: npx tsx scripts/publish-ranked.ts
       - name: Type check
         run: npm run typecheck
