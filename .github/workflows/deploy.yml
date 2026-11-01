@@ -33,7 +33,7 @@ jobs:
         run: |
           analysis=true
           if [ "$EVENT_NAME" = push ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-            changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- data public/data scripts src/core | grep -v '^src/core/block-pop.ts$' || true)
+            changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- data public/data scripts src/core | grep -vE '^src/core/block-pop(-legacy)?\.ts$' || true)
             if [ -z "$changes" ]; then analysis=false; fi
           fi
           echo "analysis=$analysis" >> "$GITHUB_OUTPUT"
