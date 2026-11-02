@@ -1,0 +1,9 @@
+import type {Draw} from './data';import {shape} from './advanced-model';import {wilson} from './combination-groups';
+export const PATTERN_MIN_SUPPORT=70;
+export const PATTERN_RULES=[{id:'low',label:'저번호 2~4개·고번호 2~4개',min:2,max:4},{id:'groups',label:'번호가 3~4개 구간에 분포',min:3,max:4},{id:'odd',label:'홀수 2~4개·짝수 2~4개',min:2,max:4}] as const;
+export type PatternRule=typeof PATTERN_RULES[number];
+export function matchesRecentPattern(s:Pick<ReturnType<typeof shape>,'odd'|'low'|'groups'>,rules:PatternRule[]){return rules.every(r=>s[r.id]>=r.min&&s[r.id]<=r.max);}
+/** Only broad, predeclared composition rules. Never mine a lucky exact number sequence. */
+export function recentPatternProfile(history:Draw[]){if(history.length!==100)throw Error('패턴 분석에는 확정된 100회가 필요합니다.');const shapes=history.map(d=>shape(d.numbers)),observed=PATTERN_RULES.map(rule=>({rule,hits:shapes.filter(s=>matchesRecentPattern(s,[rule])).length})).sort((a,b)=>b.hits-a.hits||a.rule.id.localeCompare(b.rule.id));const selected:PatternRule[]=[],evaluations:{rule:PatternRule;hits:number;jointIfAdded:number;used:boolean;reason:string}[]=[];
+ for(const {rule,hits} of observed){const jointIfAdded=shapes.filter(s=>matchesRecentPattern(s,[...selected,rule])).length,used=hits>=PATTERN_MIN_SUPPORT&&jointIfAdded>=PATTERN_MIN_SUPPORT;if(used)selected.push(rule);evaluations.push({rule,hits,jointIfAdded,used,reason:used?'개별·동시 관찰 빈도가 모두 70회 이상':'동시에 적용했을 때 70회 미만이거나 개별 빈도가 부족하여 제외'});}
+ const jointHits=selected.length?shapes.filter(s=>matchesRecentPattern(s,selected)).length:0;return {firstRound:history[0].round,lastRound:history.at(-1)!.round,draws:100,minSupport:PATTERN_MIN_SUPPORT,rules:selected,jointHits,ci:wilson(jointHits,100),evaluations,note:'과거 100회의 관찰 빈도입니다. 미래 당첨 확률이나 예측 우위를 뜻하지 않습니다. 70회 기준은 이번 실험의 고정 설계값이며 적중 실적을 보고 조정하지 않습니다.'};}

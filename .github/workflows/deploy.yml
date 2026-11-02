@@ -32,11 +32,15 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
         run: |
           analysis=true
+          methods=true
           if [ "$EVENT_NAME" = push ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-            changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- data public/data scripts src/core | grep -vE '^src/core/block-pop(-legacy)?\.ts$' || true)
+            changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- data public/data scripts src/core | grep -vE '^src/core/(block-pop(-legacy)?|method-five|portfolio-coverage|recent-patterns)\.ts$|^scripts/publish-method-five\.ts$|^public/data/method-five\.json$' || true)
             if [ -z "$changes" ]; then analysis=false; fi
+            method_changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- src/core/method-five.ts src/core/portfolio-coverage.ts src/core/recent-patterns.ts scripts/publish-method-five.ts public/data/method-five.json)
+            if [ "$analysis" = false ] && [ -z "$method_changes" ]; then methods=false; fi
           fi
           echo "analysis=$analysis" >> "$GITHUB_OUTPUT"
+          echo "methods=$methods" >> "$GITHUB_OUTPUT"
           echo "Recalculate lottery analysis: $analysis (scheduled and manual runs always recalculate)"
       - name: Collect data (retain last good file on failure)
         if: steps.scope.outputs.analysis == 'true'
@@ -58,6 +62,9 @@ jobs:
       - name: Precompute ranked recommendations for instant public display
         if: steps.scope.outputs.analysis == 'true'
         run: npx tsx scripts/publish-ranked.ts
+      - name: Prepare recent-100 direct methods and 200-round comparison
+        if: steps.scope.outputs.methods == 'true'
+        run: npx tsx scripts/publish-method-five.ts
       - name: Type check
         run: npm run typecheck
       - name: Set up game-server lib for sync test
