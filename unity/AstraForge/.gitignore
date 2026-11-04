@@ -1,0 +1,9 @@
+Library/
+Temp/
+Logs/
+UserSettings/
+Builds/
+obj/
+bin/
+Verification/bin/
+Verification/obj/

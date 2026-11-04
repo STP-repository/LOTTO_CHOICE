@@ -14,7 +14,7 @@ async function uploadPending(){
  if(rankingEpoch>0)personalStorage.setItem(KEY,JSON.stringify(puzzleRecords().map(r=>Date.parse(r.at)<=rankingEpoch?{...r,retired:true}:r)));
  const profile=currentProfile(),key='lotto-best-choice:cloud-token:v1';let token=personalStorage.getItem(key);if(!token){token=crypto.randomUUID()+crypto.randomUUID();personalStorage.setItem(key,token);}
  let rejected='';
- for(const record of puzzleRecords().filter(r=>!r.synced&&!r.retired&&!r.syncError&&(r.kind==='harvest'?[HARVEST_VERSION]:[GENERATOR_VERSION,'color-block-escape-v1']).includes(r.version)).reverse()){
+ for(const record of puzzleRecords().filter(r=>!r.synced&&!r.retired&&!r.syncError&&r.kind==='harvest'&&r.version===HARVEST_VERSION).reverse()){
   const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({epoch:Number(localStorage.getItem("lotto-best-choice:identity-epoch:v1")||0),rankingEpoch,id:profile.id,token,profileRevision:Number(personalStorage.getItem("profile:revision:v1")||0),name:profile.name,kind:record.kind,stage:record.stage,version:record.version,actions:record.actions}),signal:AbortSignal.timeout(15000)});
   if(!res.ok){const data=await res.json().catch(()=>({})) as {error?:string;code?:string};const reason=data.error||'공개 기록 서버에 연결하지 못했습니다. 내 기록은 기기에 보관됩니다.';
    if(res.status===409&&data.code!=='RANKINGS_RESET'){notifyIdentityExpired();throw Error('관리자가 사용자를 초기화했습니다. 새로고침 후 아이디를 다시 등록해 주세요.');}
