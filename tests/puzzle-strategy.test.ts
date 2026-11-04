@@ -1,7 +1,7 @@
 import {strategyPolicy} from '../src/core/harvest-strategy';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {generateEscape,generateHarvest,initialHarvest,placeToken,harvestQueueHeads,hashSeed,verifyEscape,verifyHarvest,harvestLeftmostWins,GENERATOR_VERSION,HARVEST_VERSION} from '../src/core/puzzles';
+import {generateHarvest,initialHarvest,placeToken,harvestQueueHeads,hashSeed,verifyHarvest,harvestLeftmostWins,GENERATOR_VERSION,HARVEST_VERSION} from '../src/core/puzzles';
 import {reserveCollection,completeCollection,collectionDuration} from '../src/core/harvest-transport';
 
 test('4개 줄의 맨 위만 선택 가능하고 선택한 줄만 앞으로 이동한다',()=>{
@@ -24,11 +24,4 @@ test('전략 대기줄은 해결 가능하고 여러 단순 정책에 의존하�
   assert.ok(['left','right','smallest','largest','visible'].filter(k=>!strategyPolicy(p,k)).length>=3,stage);
  }
 });
-
-test('신규 컬러 블록 탈출은 점유 칸 기반 블록과 검증된 해결 경로를 생성한다',()=>{
- for(const stage of ['1','2','3','5','30','100','1000','100000'])for(let i=0;i<3;i++){
-  const p=generateEscape(stage,hashSeed(`${GENERATOR_VERSION}:escape:${stage}:${i}`));assert.ok(verifyEscape(p,p.solution));assert.ok(p.pieces.length>=4,`${stage}:${i}`);assert.ok(p.solution.length>=1&&p.solution.length<=250);
- }
-});
-
 

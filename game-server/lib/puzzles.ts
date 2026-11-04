@@ -4,10 +4,9 @@ import {HARVEST_VERSION} from './harvest-art';
 export {HARVEST_VERSION,HARVEST_PALETTE} from './harvest-art';
 // Independent rules shared by generation, solution verification, and the UI.
 export type PuzzleKind='escape'|'harvest';
-export {COLOR_BLOCK_VERSION as GENERATOR_VERSION} from './color-block-escape';
-export type {State as EscapeState,Side as Direction} from './color-block-escape';
-export type {ColorStage as EscapePuzzle} from './color-block-stages';
-export {generateColorStage as generateEscape,verifyColorStage as verifyEscape} from './color-block-stages';
+// Retired identifier is retained only to recognize historical stored record metadata.
+export const GENERATOR_VERSION='retired-color-game';
+export type Direction='up'|'right'|'down'|'left';
 export const PALETTE=['#ff806b','#54c8ef','#b89aff','#ffd064','#69dbb4','#ee97cd'];
 export function hashSeed(value:string){let h=2166136261;for(const c of value)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h;}
 export function puzzleRandom(seed:number){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}

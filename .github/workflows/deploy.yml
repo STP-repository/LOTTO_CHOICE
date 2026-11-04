@@ -34,7 +34,7 @@ jobs:
           analysis=true
           methods=true
           if [ "$EVENT_NAME" = push ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-            changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- data public/data scripts src/core | grep -vE '^src/core/(block-pop(-legacy)?|method-five|portfolio-coverage|recent-patterns)\.ts$|^scripts/publish-method-five\.ts$|^public/data/method-five\.json$' || true)
+            changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- data public/data scripts src/core | grep -vE '^src/core/(block-pop(-legacy)?|method-five|portfolio-coverage|recent-patterns)\.ts$|^src/core/(puzzles|puzzle-proof|color-[^/]+)\.ts$|^src/core/color-challenge-catalog\.json$|^scripts/check-puzzle-policy\.ts$|^scripts/publish-method-five\.ts$|^public/data/method-five\.json$' || true)
             if [ -z "$changes" ]; then analysis=false; fi
             method_changes=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- src/core/method-five.ts src/core/portfolio-coverage.ts src/core/recent-patterns.ts scripts/publish-method-five.ts public/data/method-five.json)
             if [ "$analysis" = false ] && [ -z "$method_changes" ]; then methods=false; fi
