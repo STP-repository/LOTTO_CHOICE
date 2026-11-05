@@ -1,7 +1,7 @@
 import IdentityRegistration from './components/IdentityRegistration';
 import {currentProfile,personalStorage} from './services/profiles';
 import ProfileMenu from './components/ProfileMenu';
-import PartyGames from './components/PartyGames';
+import PuzzleGames from './components/PuzzleGames';
 import Landing from './components/Landing';
 import AdvancedAnalysis from './components/AdvancedAnalysis';
 import TicketCheck from './components/TicketCheck';
@@ -75,7 +75,7 @@ export default function App(){
   return <div className="app-shell"><aside className="sidebar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setLanding(true);window.scrollTo(0,0);}}><span className="brand-icon">6<span>/45</span></span><span>Lotto Best Choice<small>LOTTO BEST CHOICE</small></span></a><div className="nav-label">WORKSPACE</div><nav aria-label="메인 메뉴">{menus.map(([icon,label],i)=>![1,3,6].includes(i)&&<button key={label} className={page===i?'active':''} onClick={()=>setPage(i)}><span>{icon}</span>{label}{i===2&&<span className="tiny-tag">AI</span>}</button>)}</nav><div className="sidebar-note"><span className="signal"/> 실제 데이터 기반<small>숫자 속 패턴을 탐색하고,<br/>통계로 새로운 조합을 만나보세요.</small></div><div className="sidebar-footer">대한민국 로또 6/45<small>분석을 위한 도구 · 예측 보장 없음</small></div></aside>
   {pendingDraw&&<DrawAnimation key={pendingDraw.seed} numbers={pendingDraw.games[0].numbers} games={pendingDraw.games.length} onComplete={finishDraw}/>}<main><header className="topbar"><div className="breadcrumb">워크스페이스 <span>/</span> <strong>{menus[page][1]}</strong></div><div className="topbar-right"><button className="back-to-home" onClick={()=>{setLanding(true);window.scrollTo(0,0);}}>홈으로</button><span className="live-dot"/> LOTTO 6/45 <ProfileMenu/></div></header><div className="content"><div className="page-heading"><div><div className="eyebrow">LOTTO INTELLIGENCE / FULL DRAW ARCHIVE</div><h1>{page===0?'숫자 속 흐름을 발견하세요.':menus[page][1]}</h1><p>{page===0?'전체 회차의 당첨 기록, 데이터로 읽는 로또의 패턴.':'Lotto Best Choice · 실제 기록을 기반으로 한 통계 탐색'}</p></div><button className="btn btn-white" onClick={update} disabled={busy}><span className={busy?'spin':''}>↻</span> {busy?'데이터 확인 중':'데이터 새로고침'}</button></div>
   {error&&<div className="alert error" role="alert">{error}</div>}{notice&&<div className="alert" role="status">{notice}<button aria-label="알림 닫기" onClick={()=>setNotice('')}>×</button></div>}{stale&&<div className="alert warning">최신 예상 회차보다 데이터가 뒤처져 있습니다. 데이터 관리에서 출처와 수집 상태를 확인하세요.</div>}
-  {page===7&&<PartyGames/>}
+  {page===7&&<PuzzleGames/>}
 
   {page===5&&<TicketCheck data={data} onRefresh={()=>void update()} refreshing={busy}/>}
   {!latest?(page===5||page===7)?null:<Panel title={busy?'당첨 기록을 불러오고 있습니다':'아직 분석할 데이터가 없습니다'} sub="공식 데이터 수집 후 또는 CSV 업로드 후 모든 분석 기능을 사용할 수 있습니다."><button className="btn btn-primary" onClick={()=>setPage(4)}>데이터 관리 열기 →</button></Panel>:<>
