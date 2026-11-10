@@ -2,7 +2,7 @@
   "version": 1,
   "signature": "1249-1249-2e469a81",
   "lastRound": 1249,
-  "generatedAt": "2026-11-08T01:29:17.997Z",
+  "generatedAt": "2026-11-10T04:08:08.497Z",
   "rows": [
     {
       "budget": 2000,
@@ -404,10 +404,10 @@
           }
         ]
       },
-      "milliseconds": 180.208929,
-      "rssBefore": 65040384,
-      "rssAfter": 91983872,
-      "peakRss": 92336128,
+      "milliseconds": 176.39464,
+      "rssBefore": 65015808,
+      "rssAfter": 91320320,
+      "peakRss": 92217344,
       "scoreContext": "선정 전 다양성 100점, 기존 가중치 및 꼬리 감점"
     },
     {
@@ -810,10 +810,10 @@
           }
         ]
       },
-      "milliseconds": 182.13062499999998,
-      "rssBefore": 65142784,
-      "rssAfter": 90025984,
-      "peakRss": 91889664,
+      "milliseconds": 179.080399,
+      "rssBefore": 65404928,
+      "rssAfter": 93982720,
+      "peakRss": 95191040,
       "scoreContext": "선정 전 다양성 100점, 기존 가중치 및 꼬리 감점"
     },
     {
@@ -1216,10 +1216,10 @@
           }
         ]
       },
-      "milliseconds": 542.616937,
-      "rssBefore": 64614400,
-      "rssAfter": 114995200,
-      "peakRss": 120901632,
+      "milliseconds": 523.7668,
+      "rssBefore": 65007616,
+      "rssAfter": 114905088,
+      "peakRss": 120287232,
       "scoreContext": "선정 전 다양성 100점, 기존 가중치 및 꼬리 감점"
     },
     {
@@ -1622,10 +1622,10 @@
           }
         ]
       },
-      "milliseconds": 552.292373,
-      "rssBefore": 65273856,
-      "rssAfter": 114765824,
-      "peakRss": 120385536,
+      "milliseconds": 530.089468,
+      "rssBefore": 65269760,
+      "rssAfter": 114642944,
+      "peakRss": 119967744,
       "scoreContext": "선정 전 다양성 100점, 기존 가중치 및 꼬리 감점"
     },
     {
@@ -2028,10 +2028,10 @@
           }
         ]
       },
-      "milliseconds": 3929.337825,
-      "rssBefore": 65273856,
-      "rssAfter": 292732928,
-      "peakRss": 295649280,
+      "milliseconds": 3978.901773,
+      "rssBefore": 65224704,
+      "rssAfter": 295030784,
+      "peakRss": 301379584,
       "scoreContext": "선정 전 다양성 100점, 기존 가중치 및 꼬리 감점"
     },
     {
@@ -2434,10 +2434,10 @@
           }
         ]
       },
-      "milliseconds": 3897.8517699999998,
-      "rssBefore": 65236992,
-      "rssAfter": 296792064,
-      "peakRss": 297349120,
+      "milliseconds": 3946.207428,
+      "rssBefore": 65224704,
+      "rssAfter": 294936576,
+      "peakRss": 302346240,
       "scoreContext": "선정 전 다양성 100점, 기존 가중치 및 꼬리 감점"
     },
     {
@@ -2840,10 +2840,10 @@
           }
         ]
       },
-      "milliseconds": 36915.652036,
-      "rssBefore": 65277952,
-      "rssAfter": 1163845632,
-      "peakRss": 1179832320,
+      "milliseconds": 37160.020656,
+      "rssBefore": 65351680,
+      "rssAfter": 1159397376,
+      "peakRss": 1175322624,
       "scoreContext": "선정 전 다양성 100점, 기존 가중치 및 꼬리 감점"
     },
     {
@@ -3246,10 +3246,10 @@
           }
         ]
       },
-      "milliseconds": 37377.956271,
-      "rssBefore": 65273856,
-      "rssAfter": 1165438976,
-      "peakRss": 1181347840,
+      "milliseconds": 37332.409408,
+      "rssBefore": 64962560,
+      "rssAfter": 1152794624,
+      "peakRss": 1168744448,
       "scoreContext": "선정 전 다양성 100점, 기존 가중치 및 꼬리 감점"
     }
   ],
