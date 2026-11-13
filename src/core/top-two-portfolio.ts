@@ -5,7 +5,7 @@ import {sampleSix} from './advanced-model';
 import {rng} from './recommend';
 import type {Draw} from './data';
 
-export const MIXED_EXTRA_NAMES = ['한 번호대 3개 이상','최근 100회 다빈도','직전 본번호 1개 겹침','27·38 패턴','세 방식 무작위 비율 혼합'] as const;
+export const MIXED_EXTRA_NAMES = ['한 번호대 3개 이상','최근 100회 다빈도','추첨 순서 그대로','27·38 패턴','세 방식 무작위 비율 혼합'] as const;
 export const MIXED_DISPLAY_ORDER = [0, 1, 2, 3, 9, 4, 5, 6, 7, 8] as const;
 
 export function buildPatternPortfolio(base: readonly number[][], seed: number): number[][] {
@@ -127,7 +127,7 @@ export function buildMixedPortfolio(base: number[][], seed: number, history: Dra
             const mixed = blend();
             if (fixedTickets.every(other => mixed.filter(n => other.includes(n)).length <= 3)) {
               portfolio[9] = mixed;
-              return portfolio;
+              return replaceWithDrawOrder(portfolio, seed);
             }
           }
           throw new Error('무작위 비율 혼합 조합을 찾지 못했습니다.');
@@ -137,6 +137,20 @@ export function buildMixedPortfolio(base: number[][], seed: number, history: Dra
     }
   }
   throw new Error('직전 본번호와 1개 겹치는 추천 조합을 찾지 못했습니다.');
+}
+
+function replaceWithDrawOrder(portfolio: number[][], seed: number): number[][] {
+  const slot = MIXED_DISPLAY_ORDER[8];
+  const fixed = portfolio.filter((_, index) => index !== slot);
+  const random = rng(seed ^ 0x6297af);
+  for (let attempt = 0; attempt < 3000; attempt++) {
+    const numbers = new Set<number>();
+    while (numbers.size < 6) numbers.add(1 + Math.floor(random() * 45));
+    if (fixed.every(ticket => ticket.filter(number => numbers.has(number)).length <= 3)) {
+      return portfolio.map((ticket, index) => index === slot ? [...numbers] : ticket);
+    }
+  }
+  throw new Error('겹침 조건에 맞는 추첨 순서 조합을 찾지 못했습니다.');
 }
 
 export function buildLowOverlapPortfolio(seed: number): number[][] {
