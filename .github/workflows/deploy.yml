@@ -74,6 +74,7 @@ jobs:
       - name: Tests
         # Latest check is intentionally strict: fail stale data rather than silently publish.
         run: npm test
+      - run: npx tsx scripts/publish-method-hits.ts
       - name: Save data and collection status
         run: |
           git config user.name "github-actions[bot]"

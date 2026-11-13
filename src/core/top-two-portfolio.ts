@@ -5,6 +5,8 @@ import {sampleSix} from './advanced-model';
 import {rng} from './recommend';
 import type {Draw} from './data';
 
+export const MIXED_DISPLAY_ORDER = [0, 1, 2, 3, 9, 4, 5, 6, 7, 8] as const;
+
 export function buildPatternPortfolio(base: readonly number[][], seed: number): number[][] {
   const used = new Set(base.flat());
   if (base.length !== 5 || used.size !== 30 || base.some(numbers => !validCombination(numbers))) {
