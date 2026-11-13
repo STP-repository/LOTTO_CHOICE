@@ -3,18 +3,19 @@ import {METHOD_IDS,METHOD_NAMES} from '../core/method-five';
 import {MIXED_DISPLAY_ORDER,MIXED_EXTRA_NAMES} from '../core/top-two-portfolio';
 import type {MethodHits} from '../services/method-five';
 
-export function MethodHitsTable({hits,mode}:{hits:MethodHits;mode:string}) {
+export function MethodHitsTable({hits,mode,indices}:{hits:MethodHits;mode:string;indices?:number[]}) {
  const hitRows=hits.totals[mode];
+ const shown=hitRows.map((ranks,i)=>({ranks,i})).filter(({i})=>!indices||indices.includes(i));
  const base=METHOD_IDS.map(id=>METHOD_NAMES[id]);
  const names=[...base,...MIXED_EXTRA_NAMES];
  const labels=mode==='five'?base:mode==='mixed'?MIXED_DISPLAY_ORDER.map(i=>names[i]):Array(10).fill('45개 번호 분산');
- const hitTotals=[0,1,2,3,4].map(i=>hitRows.reduce((sum,ranks)=>sum+ranks[i],0));
- return <section className="panel"><h2>추천 방식별 과거 당첨 횟수</h2>
- <p>제{hits.first}~{hits.last}회 · {hits.rounds.toLocaleString()}회 · 매회 {hitRows.length}조합을 추첨 직전 데이터로 다시 생성해 대조했습니다.</p>
- <div className="table-scroll"><table><thead><tr><th>추천 방식</th>{[1,2,3,4,5].map(rank=><th key={rank}>{rank}등</th>)}<th>당첨 합계</th></tr></thead><tbody>
- {hitRows.map((ranks,i)=><tr key={i}><th>{String.fromCharCode(65+i)} · {labels[i]}</th>{ranks.map((n,j)=><td key={j}>{n}</td>)}<td>{ranks.reduce((a,b)=>a+b,0)}장</td></tr>)}
+ const hitTotals=[0,1,2,3,4].map(i=>shown.reduce((sum,{ranks})=>sum+ranks[i],0));
+ return <section className="panel method-hits"><h2>추천 방식별 과거 당첨 횟수</h2>
+ <p>제{hits.first}~{hits.last}회 · {hits.rounds.toLocaleString()}회 · 매회 {hitRows.length}조합을 추첨 직전 데이터로 다시 생성해 대조했습니다.{indices&&' 선택한 방식의 실적만 표시합니다.'}</p>
+ <table className="method-hits-table"><thead><tr><th>추천 방식</th>{[1,2,3,4,5].map(rank=><th key={rank}>{rank}등</th>)}<th scope="col">합계</th></tr></thead><tbody>
+ {shown.map(({ranks,i})=><tr key={i}><th scope="row">{String.fromCharCode(65+i)} · {labels[i]}</th>{ranks.map((n,j)=><td key={j}>{n}</td>)}<td>{ranks.reduce((a,b)=>a+b,0)}장</td></tr>)}
  <tr><th>합계</th>{hitTotals.map((n,i)=><td key={i}>{n}</td>)}<td>{hitTotals.reduce((a,b)=>a+b,0)}장</td></tr>
- </tbody></table></div></section>;
+ </tbody></table></section>;
 }
 
 export default function DashboardMethodHits({signature}:{signature:string}) {
