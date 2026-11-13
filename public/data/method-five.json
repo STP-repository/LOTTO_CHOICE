@@ -32,7 +32,7 @@
     "historyCount": 100,
     "targetRound": 1250,
     "seed": 2865111872,
-    "generatedAt": "2026-11-10T04:08:52.387Z",
+    "generatedAt": "2026-11-13T06:44:12.198Z",
     "games": [
       {
         "method": "markov",
