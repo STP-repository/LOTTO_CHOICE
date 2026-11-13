@@ -5,6 +5,7 @@ import {sampleSix} from './advanced-model';
 import {rng} from './recommend';
 import type {Draw} from './data';
 
+export const MIXED_EXTRA_NAMES = ['한 번호대 3개 이상','최근 100회 다빈도','직전 본번호 1개 겹침','27·38 패턴','세 방식 무작위 비율 혼합'] as const;
 export const MIXED_DISPLAY_ORDER = [0, 1, 2, 3, 9, 4, 5, 6, 7, 8] as const;
 
 export function buildPatternPortfolio(base: readonly number[][], seed: number): number[][] {
