@@ -31,3 +31,26 @@ export function generateMethodFive(input:Draw[],seed?:number,now=new Date()):Met
 }
 export function generateMethodFiveBefore(all:Draw[],target:Draw,seed=methodSeed(target.round)){return generateMethodFive(all.filter(d=>d.round<target.round&&d.date<target.date),seed,new Date(`${target.date}T00:00:00+09:00`));}
 export {sampleSix};
+
+export function randomBlendSampler(history: Draw[], random: () => number) {
+ const markov = buildAdvancedModel(history.slice(-100)).numbers.map(n => n.scores[1]);
+ const cuts = [random(), random()].sort((a, b) => a - b);
+ return () => {
+  const available = Array.from({length:45}, (_, i) => i + 1);
+  const result: number[] = [];
+  while (result.length < 6) {
+   const roll = random();
+   const number = roll < cuts[0]
+    ? drawAvailable(random, available, markov, 1)[0]
+    : roll < cuts[1]
+     ? drawAvailable(random, available, undefined, 1)[0]
+     : (() => {
+        const sample = stratified(random, available);
+        return sample[Math.floor(random() * sample.length)];
+       })();
+   result.push(number);
+   available.splice(available.indexOf(number), 1);
+  }
+  return result.sort((a, b) => a - b);
+ };
+}
