@@ -51,3 +51,5 @@
  .method-hits-table th,.method-hits-table td{padding:3px 1px}
  .method-hits-table th:first-child{width:45%}
 }
+
+.weekly-hit-table th:first-child{width:40%}.weekly-hit-table th:last-child{width:16%}

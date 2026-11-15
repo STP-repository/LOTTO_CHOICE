@@ -4,11 +4,13 @@ import {dataSignature} from '../src/core/advanced-model';
 import {generateMethodFiveBefore} from '../src/core/method-five';
 import {buildMixedPortfolio, buildLowOverlapPortfolio, MIXED_DISPLAY_ORDER} from '../src/core/top-two-portfolio';
 import {checkGame} from '../src/core/ticket';
+import type {MethodHits} from '../src/services/method-five';
 
 const draws = validateDraws(JSON.parse(await readFile('public/data/full-history.json', 'utf8')).draws);
 const modes = {five: 5, mixed: 10, 'low-overlap': 10};
 const totals = Object.fromEntries(Object.entries(modes).map(([mode, count]) =>
   [mode, Array.from({length: count}, () => [0, 0, 0, 0, 0])]));
+let latest: MethodHits['latest'];
 for (const [i, draw] of draws.entries()) {
   if (i < 100) continue;
   const history = draws.slice(0, i);
@@ -16,6 +18,9 @@ for (const [i, draw] of draws.entries()) {
   const five = result.games.map(game => game.numbers);
   const mixed = buildMixedPortfolio(five, result.seed, history);
   const packs = {five, mixed: MIXED_DISPLAY_ORDER.map(index => mixed[index]), 'low-overlap': buildLowOverlapPortfolio(result.seed)};
+  if (i === draws.length - 1) {
+    latest = {draw, tickets: packs.mixed.map(numbers => ({numbers, ...checkGame(numbers, draw)}))};
+  }
   for (const [mode, tickets] of Object.entries(packs)) {
     tickets.forEach((numbers, index) => {
       const {rank} = checkGame(numbers, draw);
@@ -25,5 +30,5 @@ for (const [i, draw] of draws.entries()) {
 }
 await writeFile('public/data/method-hits.json', JSON.stringify({
   signature: dataSignature(draws), first: draws[100].round, last: draws.at(-1)!.round,
-  rounds: draws.length - 100, totals,
+  rounds: draws.length - 100, totals, latest,
 }));
