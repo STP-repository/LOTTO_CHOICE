@@ -53,3 +53,7 @@
 }
 
 .weekly-hit-table th:first-child{width:40%}.weekly-hit-table th:last-child{width:16%}
+.weekly-number-list{display:flex;flex-wrap:wrap;justify-content:center;gap:2px}
+.weekly-number{display:inline-block;padding:1px 3px;border-radius:4px}
+.weekly-number.is-match{background:#dcfce7;color:#14532d;font-weight:700}
+.weekly-number.is-bonus{background:#fef3c7;color:#78350f;font-weight:700}

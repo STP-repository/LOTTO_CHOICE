@@ -45,8 +45,13 @@ export default function DashboardMethodHits({signature}:{signature:string}) {
     {latest?<><p>제{latest.draw.round}회 · {latest.draw.date} · 추첨 직전 데이터로 추천 10조합을 재현했습니다.</p>
      <p>실제 당첨번호 {latest.draw.numbers.join(' · ')} / 보너스 {latest.draw.bonus}</p>
      <p>{latest.tickets.some(ticket=>ticket.rank)?[1,2,3,4,5].map(rank=>({rank,count:latest.tickets.filter(ticket=>ticket.rank===rank).length})).filter(({count})=>count).map(({rank,count})=>rank+'등 '+count+'장').join(' · '):'10장 모두 낙첨'}</p>
+     <p><span className="weekly-number is-match">본번호 일치</span> <span className="weekly-number is-bonus">보너스 일치</span></p>
      <table className="method-hits-table weekly-hit-table"><thead><tr><th scope="col">추천 방식</th><th scope="col">추천번호</th><th scope="col">결과</th></tr></thead><tbody>
-      {latest.tickets.map((ticket,i)=><tr key={i}><th scope="row">{String.fromCharCode(65+i)} · {mixedNames[i]}</th><td>{ticket.numbers.join(' · ')}</td><td>{ticket.rank?ticket.rank+'등':'낙첨'}</td></tr>)}
+      {latest.tickets.map((ticket,i)=><tr key={i}><th scope="row">{String.fromCharCode(65+i)} · {mixedNames[i]}</th><td><div className="weekly-number-list">{ticket.numbers.map(number=>{
+       const match=ticket.matched.includes(number);
+       const bonus=number===latest.draw.bonus;
+       return <span key={number} className={'weekly-number'+(match?' is-match':bonus?' is-bonus':'')} aria-label={match?number+'번 본번호 일치':bonus?number+'번 보너스 일치':undefined}>{number}</span>;
+      })}</div></td><td>{ticket.rank?ticket.rank+'등':'낙첨'}</td></tr>)}
      </tbody></table></>:<p>이번 주 당첨 결과를 준비 중입니다.</p>}
    </section>}
  </div>;
