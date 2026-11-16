@@ -14,3 +14,5 @@
 .weekly-check .is-match { background: #146440; color: #fff; }
 .weekly-check .is-bonus { background: #ffd15b; color: #422600; }
 .weekly-check-result { margin-left: auto; font-size: 11px; white-space: nowrap; }
+.seed-hits-table th:first-child { width: 24%; }
+.seed-hits-table th:last-child { width: 16%; }

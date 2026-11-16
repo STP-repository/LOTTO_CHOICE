@@ -1,0 +1,53 @@
+{
+  "first": 1151,
+  "last": 1250,
+  "simulations": 1000000,
+  "generations": 300,
+  "rows": [
+    {
+      "label": "메인 시드",
+      "tickets": 1000,
+      "ranks": [
+        0,
+        0,
+        1,
+        0,
+        14
+      ],
+      "winRounds": 12
+    },
+    {
+      "label": "새 시드",
+      "tickets": 1000,
+      "ranks": [
+        0,
+        0,
+        0,
+        2,
+        19
+      ],
+      "winRounds": 16
+    }
+  ],
+  "best": {
+    "round": 1170,
+    "slot": "B",
+    "numbers": [
+      3,
+      13,
+      22,
+      28,
+      34,
+      38
+    ],
+    "matched": [
+      3,
+      13,
+      28,
+      34,
+      38
+    ],
+    "bonus": false,
+    "rank": 3
+  }
+}

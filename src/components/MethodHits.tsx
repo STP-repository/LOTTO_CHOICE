@@ -4,6 +4,7 @@ import {METHOD_IDS,METHOD_NAMES} from '../core/method-five';
 import {MIXED_DISPLAY_ORDER,MIXED_EXTRA_NAMES} from '../core/top-two-portfolio';
 import type {MethodHits} from '../services/method-five';
 import integratedBacktest from './integrated-backtest.json';
+import seedBacktest from './seed-backtest-100.json';
 
 const tunedName='조정 빈도 가중 필터';
 const integratedName='A~H 통합 공식';
@@ -30,14 +31,25 @@ const recommendationGroups=[
 ];
 
 export function IntegratedBacktest() {
+ const recent=seedBacktest;
+ const {best}=recent;
  const {first,last,rows}=integratedBacktest;
  const percent=(value:number)=>(100*value).toFixed(2)+'%';
- return <section className="panel method-hits"><h2>F~J 통합 공식 검증</h2>
+ return <section className="panel method-hits weekly-check"><h2>최근 100회 · 메인 시드와 새 시드</h2>
+  <p>제{recent.first}~{recent.last}회 · 매회 시드별 A~J 10조합 · 공식별 시뮬레이션 {recent.simulations.toLocaleString()}회 · 최대 {recent.generations}세대</p>
+  <table className="method-hits-table seed-hits-table"><thead><tr><th scope="col">시드</th>{[1,2,3,4,5].map(rank=><th scope="col" key={rank}>{rank}등</th>)}<th scope="col">합계</th><th scope="col">당첨 회차</th></tr></thead>
+   <tbody>{recent.rows.map(row=><tr key={row.label}><th scope="row">{row.label}</th>{row.ranks.map((count,i)=><td key={i}>{count}</td>)}
+    <td>{row.ranks.reduce((sum,count)=>sum+count,0)}장</td><td>{row.winRounds}회</td></tr>)}</tbody></table>
+  <div className="weekly-check-draw"><div><p>최고 3등 · 제{best.round}회 메인 {best.slot}조합 · 본번호 {best.matched.length}개 일치</p>
+   <WeeklyNumbers numbers={best.numbers} matched={best.matched}/></div></div>
+  <p>당시 확정된 이력으로 다시 생성한 결과입니다. 새 시드는 회차당 한 번을 비교했습니다.</p>
+  <details><summary>이전 F~J 통합 공식 검증</summary>
   <p>제{first}~{last}회 · 매회 직전까지 확정된 기록 사용 · 검증용 추첨 10만 회·최대 100세대</p>
   <table className="method-hits-table"><thead><tr><th scope="col">비교 방식</th><th scope="col">평균 일치</th><th scope="col">조합 당첨률</th><th scope="col">세트 당첨률</th></tr></thead>
    <tbody>{rows.map(row=><tr key={row.label}><th scope="row">{row.label}</th><td>{row.mean.toFixed(3)}개</td>
     <td>{percent(row.ticketRate)}</td><td>{percent(row.setRate)}</td></tr>)}</tbody></table>
   <p>당첨 기준은 5등 이상입니다. 세트 당첨률은 5조합 중 한 장 이상 당첨된 비율입니다. 무작위는 회차당 1,000세트를 비교했습니다.</p>
+  </details>
  </section>;
 }
 
