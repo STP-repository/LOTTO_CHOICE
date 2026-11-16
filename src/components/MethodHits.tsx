@@ -1,3 +1,4 @@
+import './MethodHits.css';
 import {useEffect,useState} from 'react';
 import {METHOD_IDS,METHOD_NAMES} from '../core/method-five';
 import {MIXED_DISPLAY_ORDER,MIXED_EXTRA_NAMES} from '../core/top-two-portfolio';
@@ -20,10 +21,24 @@ export function MethodHitsTable({hits,mode,indices}:{hits:MethodHits;mode:string
  </tbody></table></section>;
 }
 
+const markovName='마르코프·몬테카를로·이론분포';
+const recommendationGroups=[
+ {name:tunedName, firstSlot:65},
+ {name:markovName, firstSlot:70},
+];
+
+function WeeklyNumbers({numbers,matched=[],bonus}:{numbers:readonly number[];matched?:readonly number[];bonus?:number}) {
+ return <div className="weekly-check-numbers">{numbers.map(number=>{
+  const label=matched.includes(number)?'본번호 일치':number===bonus?'보너스':'';
+  const style=matched.includes(number)?' is-match':number===bonus?' is-bonus':'';
+  return <span key={number} className={'weekly-check-ball'+style} aria-label={label?number+'번 '+label:undefined}>{String(number).padStart(2,'0')}</span>;
+ })}</div>;
+}
+
 export default function DashboardMethodHits({signature}:{signature:string}) {
  const [hits,setHits]=useState<MethodHits|null>(null);
  const [error,setError]=useState('');
- const [weekly,setWeekly]=useState(true);
+ const [tab,setTab]=useState<'latest'|'upcoming'|'history'>('latest');
  useEffect(()=>{
   const controller=new AbortController();
   setHits(null);setError('');
@@ -35,29 +50,35 @@ export default function DashboardMethodHits({signature}:{signature:string}) {
  const current=hits?.signature===signature&&hits.totals['frequency-filter']?hits:null;
  const latest=current?.combinedLatest;
  const upcoming=current?.upcoming;
- return <div>
+ return <div className="weekly-check">
   <div className="segmented" role="group" aria-label="추천 당첨 내역">
-   <button type="button" className={weekly?'selected':''} aria-pressed={weekly} onClick={()=>setWeekly(true)}>이번 주 추천번호</button>
-   <button type="button" className={!weekly?'selected':''} aria-pressed={!weekly} onClick={()=>setWeekly(false)}>과거 당첨 횟수</button>
+   <button type="button" className={tab==='latest'?'selected':''} aria-pressed={tab==='latest'} onClick={()=>setTab('latest')}>최근 당첨 결과</button>
+   <button type="button" className={tab==='upcoming'?'selected':''} aria-pressed={tab==='upcoming'} onClick={()=>setTab('upcoming')}>이번 주 추천번호</button>
+   <button type="button" className={tab==='history'?'selected':''} aria-pressed={tab==='history'} onClick={()=>setTab('history')}>과거 당첨 횟수</button>
   </div>
   {!current?<section className="panel method-hits"><p role="status">{error||(hits?'최신 회차의 당첨 자료를 갱신 중입니다.':'당첨 내역 불러오는 중…')}</p></section>
-   :!weekly?<MethodHitsTable hits={current} mode="frequency-filter"/>
-   :<section className="panel method-hits"><h2>이번 주 메인 추천번호</h2>
+   :tab==='history'?<MethodHitsTable hits={current} mode="frequency-filter"/>
+   :tab==='upcoming'?<section className="panel method-hits"><h2>이번 주 메인 추천번호</h2>
     {upcoming?<><p>제{upcoming.targetRound}회 · 시드 {upcoming.seed} · 고정수·제외수 미지정</p>
-     <table className="method-hits-table weekly-hit-table"><thead><tr><th scope="col">추천 방식</th><th scope="col">추천번호</th></tr></thead><tbody>
-      {[...upcoming.frequency.map((g,i)=>({g,slot:65+i,label:tunedName})),...upcoming.markov.games.map((g,i)=>({g,slot:70+i,label:'마르코프·몬테카를로·이론분포'}))].map(({g,slot,label})=><tr key={slot}><th scope="row">{String.fromCharCode(slot)} · {label}</th><td>{g.numbers.join(' · ')}</td></tr>)}
-     </tbody></table></>:<p>이번 주 메인 추천번호를 준비 중입니다.</p>}
-    {latest?<details><summary>지난 추첨 제{latest.draw.round}회 당첨 결과</summary><p>제{latest.draw.round}회 · {latest.draw.date} · {latest.replayed?'추첨 직전 데이터로 사후 재현한 조합':'추첨 전에 저장한 메인 조합'}</p>
-     <p>실제 당첨번호 {latest.draw.numbers.join(' · ')} / 보너스 {latest.draw.bonus}</p>
-     <p>{latest.tickets.some(ticket=>ticket.rank)?[1,2,3,4,5].map(rank=>({rank,count:latest.tickets.filter(ticket=>ticket.rank===rank).length})).filter(({count})=>count).map(({rank,count})=>rank+'등 '+count+'장').join(' · '):latest.tickets.length?latest.tickets.length+'장 모두 낙첨':'채택된 조합 없음'}</p>
-     <p><span className="weekly-number is-match">본번호 일치</span> <span className="weekly-number is-bonus">보너스 일치</span></p>
-     <table className="method-hits-table weekly-hit-table"><thead><tr><th scope="col">추천 방식</th><th scope="col">추천번호</th><th scope="col">결과</th></tr></thead><tbody>
-      {latest.tickets.map((ticket,i)=><tr key={i}><th scope="row">{String.fromCharCode(i<latest.frequencyCount?65+i:70+i-latest.frequencyCount)} · {i<latest.frequencyCount?tunedName:'마르코프·몬테카를로·이론분포'}</th><td><div className="weekly-number-list">{ticket.numbers.map(number=>{
-       const match=ticket.matched.includes(number);
-       const bonus=number===latest.draw.bonus;
-       return <span key={number} className={'weekly-number'+(match?' is-match':bonus?' is-bonus':'')} aria-label={match?number+'번 본번호 일치':bonus?number+'번 보너스 일치':undefined}>{number}</span>;
-      })}</div></td><td>{ticket.rank?ticket.rank+'등':'낙첨'}</td></tr>)}
-     </tbody></table></details>:<p>지난 추첨 결과를 준비 중입니다.</p>}
+     <div className="weekly-check-groups">{[upcoming.frequency,upcoming.markov.games].map((games,group)=>{
+      const {name,firstSlot}=recommendationGroups[group];
+      return <section key={name}><h3>{name}</h3><ul>{games.map((game,i)=><li key={i}>
+       <strong>{String.fromCharCode(firstSlot+i)}</strong><WeeklyNumbers numbers={game.numbers}/>
+      </li>)}</ul></section>;
+     })}</div></>:<p>이번 주 메인 추천번호를 준비 중입니다.</p>}
+   </section>:<section className="panel method-hits">
+    {latest?<><h2>제{latest.draw.round}회 당첨 결과</h2>
+     <p>{latest.draw.date} · {latest.replayed?'추첨 직전 데이터로 사후 재현한 조합':'추첨 전에 저장한 메인 조합'}</p>
+     <div className="weekly-check-draw"><div><p>실제 당첨번호</p><WeeklyNumbers numbers={latest.draw.numbers} matched={latest.draw.numbers}/></div>
+      <div><p>보너스</p><WeeklyNumbers numbers={[latest.draw.bonus]} bonus={latest.draw.bonus}/></div></div>
+     <p><span className="weekly-check-key is-match">본번호 일치</span> <span className="weekly-check-key is-bonus">보너스 일치</span> · {latest.tickets.length}조합 중 {latest.tickets.filter(ticket=>ticket.rank).length}장 당첨</p>
+     <div className="weekly-check-groups">{[latest.tickets.slice(0,latest.frequencyCount),latest.tickets.slice(latest.frequencyCount)].map((tickets,group)=>{
+      const {name,firstSlot}=recommendationGroups[group];
+      return <section key={name}><h3>{name}</h3><ul>{tickets.map((ticket,i)=><li key={i}>
+       <strong>{String.fromCharCode(firstSlot+i)}</strong><WeeklyNumbers numbers={ticket.numbers} matched={ticket.matched} bonus={latest.draw.bonus}/>
+       <span className="weekly-check-result">{ticket.matched.length}개 일치 · {ticket.rank?ticket.rank+'등':'낙첨'}</span>
+      </li>)}</ul></section>;
+     })}</div></>:<><h2>최근 추첨 결과</h2><p>최근 추첨 결과를 준비 중입니다.</p></>}
    </section>}
  </div>;
 }
