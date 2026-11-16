@@ -3,8 +3,10 @@ import {useEffect,useState} from 'react';
 import {METHOD_IDS,METHOD_NAMES} from '../core/method-five';
 import {MIXED_DISPLAY_ORDER,MIXED_EXTRA_NAMES} from '../core/top-two-portfolio';
 import type {MethodHits} from '../services/method-five';
+import integratedBacktest from './integrated-backtest.json';
 
 const tunedName='조정 빈도 가중 필터';
+const integratedName='A~H 통합 공식';
 
 export function MethodHitsTable({hits,mode,indices}:{hits:MethodHits;mode:string;indices?:number[]}) {
  const hitRows=hits.totals[mode];
@@ -23,9 +25,21 @@ export function MethodHitsTable({hits,mode,indices}:{hits:MethodHits;mode:string
 
 const markovName='마르코프·몬테카를로·이론분포';
 const recommendationGroups=[
- {name:markovName, firstSlot:65},
- {name:tunedName, firstSlot:70},
+ {firstSlot:65},
+ {firstSlot:70},
 ];
+
+export function IntegratedBacktest() {
+ const {first,last,rows}=integratedBacktest;
+ const percent=(value:number)=>(100*value).toFixed(2)+'%';
+ return <section className="panel method-hits"><h2>F~J 통합 공식 검증</h2>
+  <p>제{first}~{last}회 · 매회 직전까지 확정된 기록 사용 · 검증용 추첨 10만 회·최대 100세대</p>
+  <table className="method-hits-table"><thead><tr><th scope="col">비교 방식</th><th scope="col">평균 일치</th><th scope="col">조합 당첨률</th><th scope="col">세트 당첨률</th></tr></thead>
+   <tbody>{rows.map(row=><tr key={row.label}><th scope="row">{row.label}</th><td>{row.mean.toFixed(3)}개</td>
+    <td>{percent(row.ticketRate)}</td><td>{percent(row.setRate)}</td></tr>)}</tbody></table>
+  <p>당첨 기준은 5등 이상입니다. 세트 당첨률은 5조합 중 한 장 이상 당첨된 비율입니다. 무작위는 회차당 1,000세트를 비교했습니다.</p>
+ </section>;
+}
 
 function WeeklyNumbers({numbers,matched=[],bonus}:{numbers:readonly number[];matched?:readonly number[];bonus?:number}) {
  return <div className="weekly-check-numbers">{numbers.map(number=>{
@@ -57,11 +71,12 @@ export default function DashboardMethodHits({signature}:{signature:string}) {
    <button type="button" className={tab==='history'?'selected':''} aria-pressed={tab==='history'} onClick={()=>setTab('history')}>과거 당첨 횟수</button>
   </div>
   {!current?<section className="panel method-hits"><p role="status">{error||(hits?'최신 회차의 당첨 자료를 갱신 중입니다.':'당첨 내역 불러오는 중…')}</p></section>
-   :tab==='history'?<MethodHitsTable hits={current} mode="frequency-filter"/>
+   :tab==='history'?<><IntegratedBacktest/><MethodHitsTable hits={current} mode="frequency-filter"/></>
    :tab==='upcoming'?<section className="panel method-hits"><h2>이번 주 메인 추천번호</h2>
     {upcoming?<><p>제{upcoming.targetRound}회 · 시드 {upcoming.seed} · 고정수·제외수 미지정</p>
-     <div className="weekly-check-groups">{[upcoming.markov.games,upcoming.frequency].map((games,group)=>{
-      const {name,firstSlot}=recommendationGroups[group];
+     <div className="weekly-check-groups">{[upcoming.markov.games,'integrated' in upcoming?upcoming.integrated.games:upcoming.frequency].map((games,group)=>{
+      const {firstSlot}=recommendationGroups[group];
+      const name=group===0?markovName:'integrated' in upcoming?integratedName:tunedName;
       return <section key={name}><h3>{name}</h3><ul>{games.map((game,i)=><li key={i}>
        <strong>{String.fromCharCode(firstSlot+i)}</strong><WeeklyNumbers numbers={game.numbers}/>
       </li>)}</ul></section>;
@@ -73,7 +88,8 @@ export default function DashboardMethodHits({signature}:{signature:string}) {
       <div><p>보너스</p><WeeklyNumbers numbers={[latest.draw.bonus]} bonus={latest.draw.bonus}/></div></div>
      <p><span className="weekly-check-key is-match">본번호 일치</span> <span className="weekly-check-key is-bonus">보너스 일치</span> · {latest.tickets.length}조합 중 {latest.tickets.filter(ticket=>ticket.rank).length}장 당첨</p>
      <div className="weekly-check-groups">{[latest.tickets.slice(latest.frequencyCount),latest.tickets.slice(0,latest.frequencyCount)].map((tickets,group)=>{
-      const {name,firstSlot}=recommendationGroups[group];
+      const {firstSlot}=recommendationGroups[group];
+      const name=group===0?markovName:latest.integrated?integratedName:tunedName;
       return <section key={name}><h3>{name}</h3><ul>{tickets.map((ticket,i)=><li key={i}>
        <strong>{String.fromCharCode(firstSlot+i)}</strong><WeeklyNumbers numbers={ticket.numbers} matched={ticket.matched} bonus={latest.draw.bonus}/>
        <span className="weekly-check-result">{ticket.matched.length}개 일치 · {ticket.rank?ticket.rank+'등':'낙첨'}</span>

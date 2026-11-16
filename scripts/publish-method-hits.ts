@@ -4,7 +4,7 @@ import {dataSignature} from '../src/core/advanced-model';
 import {generateMethodFiveBefore, methodSeed} from '../src/core/method-five';
 import {generateAdaptiveFive} from '../src/core/adaptive-five';
 import {generateFrequencyFilterFive} from '../src/core/frequency-filter-five';
-import {generateCombinedFormulas} from '../src/core/combined-formulas';
+import {generateCombinedFormulas,generateRecommendationPack} from '../src/core/combined-formulas';
 import {buildMixedPortfolio, buildLowOverlapPortfolio, MIXED_DISPLAY_ORDER} from '../src/core/top-two-portfolio';
 import {checkGame} from '../src/core/ticket';
 import type {MethodHits} from '../src/services/method-five';
@@ -39,14 +39,16 @@ for (const [i, draw] of draws.entries()) {
 }
 const targetRound = draws.at(-1)!.round + 1;
 const adaptive = {targetRound, ...generateAdaptiveFive(draws, methodSeed(targetRound))};
-const upcoming = {targetRound, ...generateCombinedFormulas(draws, methodSeed(targetRound))};
+const upcoming = {targetRound, ...generateRecommendationPack(draws, methodSeed(targetRound))};
 const settled = draws.at(-1)!;
 const recorded = previous.upcoming?.targetRound === settled.round ? previous.upcoming : undefined;
 const previousResult = previous.combinedLatest?.draw.round === settled.round ? previous.combinedLatest : undefined;
 const pastPack = previousResult ?? (() => {
-  const pack = recorded ?? generateCombinedFormulas(draws.slice(0, -1), methodSeed(settled.round));
-  return {draw: settled, frequencyCount: pack.frequency.length, replayed: !recorded,
-    tickets: [...pack.frequency, ...pack.markov.games].map(({numbers}) => ({numbers, ...checkGame(numbers, settled)}))};
+  const replay = previous.upcoming && 'integrated' in previous.upcoming ? generateRecommendationPack : generateCombinedFormulas;
+  const pack = recorded ?? replay(draws.slice(0, -1), methodSeed(settled.round));
+  const secondary = 'integrated' in pack ? pack.integrated.games : pack.frequency;
+  return {draw: settled, frequencyCount: secondary.length, integrated: 'integrated' in pack, replayed: !recorded,
+    tickets: [...secondary, ...pack.markov.games].map(({numbers}) => ({numbers, ...checkGame(numbers, settled)}))};
 })();
 await writeFile('public/data/method-hits.json', JSON.stringify({
   signature: dataSignature(draws), first: draws[100].round, last: draws.at(-1)!.round,

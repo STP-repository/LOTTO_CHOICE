@@ -6,8 +6,9 @@ export const SIMULATION_COUNT = 1_000_000;
 const numbers = Array.from({length: 45}, (_, index) => index + 1);
 const key = (ticket: number[]) => ticket.reduce((value, number) => value * 46 + number, 0);
 
-export function generateMarkovMonteCarloFive(
+export function buildMarkovCandidates(
   history: Draw[], seed: number, fixed: number[], excluded: number[], alreadySelected: number[][] = [],
+  simulations = SIMULATION_COUNT, bayesian = false, markovRatio = 0.5,
 ) {
   if (history.length < 100 || history[0].round !== 1) throw Error('제1회부터의 확정 당첨 기록이 필요합니다.');
   if (fixed.length > 5 || [fixed, excluded].some(list => new Set(list).size !== list.length ||
@@ -41,14 +42,27 @@ export function generateMarkovMonteCarloFive(
   const frequencyScore = numbers.map(n => 1 + 0.3 * (recent[n] - average) / average);
   const mean = (values: number[]) => values.reduce((sum, n) => sum + n, 0) / 45;
   const markovMean = mean(markov), frequencyMean = mean(frequencyScore);
-  const weights = available.map(n => Math.max(0.1, 0.5 * (markov[n - 1] / markovMean + frequencyScore[n - 1] / frequencyMean)));
+  const chiSquare = numbers.reduce((sum, n) => sum + (frequency[n] - expected) ** 2 / expected, 0);
+  const half = chiSquare / 2;
+  // The upper tail for 44 degrees of freedom is a finite gamma sum.
+  let term = Math.exp(-half), p = term;
+  for (let k = 1; k < 22; k++) { term *= half / k; p += term; }
+  const beta = p < 0.05 ? 100 : 1000;
+  const weights = available.map(n => {
+    const markovScore = markov[n - 1] / markovMean;
+    const recentScore = frequencyScore[n - 1] / frequencyMean;
+    const base = markovRatio === 0.5 ? 0.5 * (markovScore + recentScore)
+      : markovRatio * markovScore + (1 - markovRatio) * recentScore;
+    const correction = bayesian ? 45 * (frequency[n] + beta) / (history.length * 6 + 45 * beta) : 1;
+    return Math.max(0.1, base * correction);
+  });
   const fullWeight = weights.reduce((sum, n) => sum + n, 0);
   const hits = new Uint32Array(46), random = rng(seed);
   const blocked = new Set([...history.map(draw => draw.numbers), ...alreadySelected].map(key));
   const seen = new Set<number>();
   const candidates: {numbers: number[]; sum: number; odd: number; low: number; ac: number; tier: number; counts: number[]}[] = [];
   const used = new Uint8Array(available.length);
-  for (let sample = 0; sample < SIMULATION_COUNT; sample++) {
+  for (let sample = 0; sample < simulations; sample++) {
     const ticket = [...fixed];
     used.fill(0);
     let total = fullWeight;
@@ -81,11 +95,21 @@ export function generateMarkovMonteCarloFive(
     for (const n of ticket) counts[groups[n - 1]]++;
     candidates.push({numbers: ticket, sum, odd, low, ac, tier, counts});
   }
-  const scores = numbers.map(n => Math.log(hits[n] / SIMULATION_COUNT));
+  const scores = numbers.map(n => Math.log(hits[n] / simulations));
   const ranked = candidates.map(candidate => ({
     ...candidate, score: candidate.numbers.reduce((sum, n) => sum + scores[n - 1], 0)
       - 0.5 * candidate.counts.reduce((sum, count) => sum + Math.abs(count - 2), 0),
   })).sort((a, b) => b.score - a.score || key(a.numbers) - key(b.numbers));
+  return {ranked, simulations, hot: numbers.filter(n => groups[n - 1] === 0),
+    cold: numbers.filter(n => groups[n - 1] === 2), lastRound: history.at(-1)!.round,
+    chiSquare, p: Math.min(1, p), beta};
+}
+
+export function generateMarkovMonteCarloFive(
+  history: Draw[], seed: number, fixed: number[], excluded: number[], alreadySelected: number[][] = [],
+  budget = SIMULATION_COUNT,
+) {
+  const {ranked, simulations, hot, cold, lastRound} = buildMarkovCandidates(history, seed, fixed, excluded, alreadySelected, budget);
   let games: typeof ranked = [];
   let tier = 0;
   for (; tier <= 3; tier++) {
@@ -97,6 +121,5 @@ export function generateMarkovMonteCarloFive(
     }
     if (games.length === 5) break;
   }
-  return {games, simulations: SIMULATION_COUNT, hot: numbers.filter(n => groups[n - 1] === 0),
-    cold: numbers.filter(n => groups[n - 1] === 2), relaxed: Math.min(tier, 3), lastRound: history.at(-1)!.round};
+  return {games, simulations, hot, cold, relaxed: Math.min(tier, 3), lastRound};
 }
