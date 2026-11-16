@@ -29,9 +29,9 @@ export default function MethodFive({fallback}:{fallback:Dataset|null}) {
  },[signature]);
  const r=file?.result;
  const games=result?[
-  ...result.frequency.map((game,i)=>({...game,slot:String.fromCharCode(65+i),label:'조정 빈도 가중 필터',explanation:''})),
-  ...result.markov.games.map((game,i)=>({...game,slot:String.fromCharCode(70+i),label:'마르코프·몬테카를로·이론분포',
+  ...result.markov.games.map((game,i)=>({...game,slot:String.fromCharCode(65+i),label:'마르코프·몬테카를로·이론분포',
    explanation:'핫 '+game.counts[0]+' · 중립 '+game.counts[1]+' · 콜드 '+game.counts[2]+' · 점수 '+game.score.toFixed(2)})),
+  ...result.frequency.map((game,i)=>({...game,slot:String.fromCharCode(70+i),label:'조정 빈도 가중 필터',explanation:''})),
  ]:[];
  const busy=calculating||animating;
  function clear(){setResult(null);setSelected([]);setNote('');}
@@ -60,13 +60,13 @@ export default function MethodFive({fallback}:{fallback:Dataset|null}) {
   <section className="panel">
    <h2>두 공식으로 추천 10조합</h2>
    <p role="status">{r?'제'+r.targetRound+'회 대상 · 제'+r.last.round+'회까지 반영':error||'확정 당첨 기록을 불러오는 중…'}</p>
-   <h3>A~E · 조정 빈도 가중 필터</h3>
-   <p>최근 100회 본번호의 출현 빈도에 계수 0.15를 적용해 가중 추출합니다. 합계 120~155, 홀짝과 저고 각각 2:4~4:2, AC 7 이상을 만족하는 조합을 최대 5장 채택합니다.</p>
-   <h3>F~J · 마르코프·몬테카를로·이론분포</h3>
+   <h3>A~E · 마르코프·몬테카를로·이론분포</h3>
    <p>전체 회차의 번호 간 전이확률과 최근 100회 빈도 점수를 50:50으로 합쳐 100만 회 추출합니다. 이론분포 필터를 통과한 조합을 번호별 시뮬레이션 출현율의 로그 합과 핫·중립·콜드 2:2:2에 가까운 정도로 채점해 최대 5장을 선정합니다.</p>
+   <h3>F~J · 조정 빈도 가중 필터</h3>
+   <p>최근 100회 본번호의 출현 빈도에 계수 0.15를 적용해 가중 추출합니다. 합계 120~155, 홀짝과 저고 각각 2:4~4:2, AC 7 이상을 만족하는 조합을 최대 5장 채택합니다.</p>
    <details><summary>두 공식의 필터 상세</summary>
-    <p>기본 조건은 연속번호 최대 1쌍, 한 번호 구간에 최대 3개, 같은 끝자리 최대 2개, 직전 본번호와 최대 2개 겹침, 역대 1등 조합 제외입니다. 각 공식 안에서 두 장이 4개 이상 겹치면 제외하며, 두 공식이 같은 조합을 내면 새 공식에서 그 조합을 건너뜁니다.</p>
-    <p>F~J는 기본 합계 108~168을 적용합니다. 5장을 못 채우면 합계 78~198, 이월수 3개 허용, AC 6 이상 순서로 완화합니다. 핫수와 콜드수는 전체 이력 출현 빈도의 Z점수 +1 이상과 -1 이하로 구분합니다.</p>
+    <p>기본 조건은 연속번호 최대 1쌍, 한 번호 구간에 최대 3개, 같은 끝자리 최대 2개, 직전 본번호와 최대 2개 겹침, 역대 1등 조합 제외입니다. 각 공식 안에서 두 장이 4개 이상 겹치면 제외하며, 두 공식이 같은 조합을 내면 마르코프·몬테카를로·이론분포 공식에서 그 조합을 건너뜁니다.</p>
+    <p>A~E는 기본 합계 108~168을 적용합니다. 5장을 못 채우면 합계 78~198, 이월수 3개 허용, AC 6 이상 순서로 완화합니다. 핫수와 콜드수는 전체 이력 출현 빈도의 Z점수 +1 이상과 -1 이하로 구분합니다.</p>
    </details>
    <fieldset disabled={busy||!r}><legend>고정수·제외수 (선택)</legend><div className="controls">
     <label>고정수 (최대 5개)<input value={fixed} placeholder="예시 3, 11" onChange={e=>{setFixed(e.target.value);clear();}}/></label>
@@ -92,7 +92,7 @@ export default function MethodFive({fallback}:{fallback:Dataset|null}) {
    </article>)}</div>
    <p>기준 제{result.markov.lastRound}회 · 시뮬레이션 {result.markov.simulations.toLocaleString()}회 · 시드 {result.seed}</p>
    <p>핫수 {result.markov.hot.join(' · ')||'없음'} / 콜드수 {result.markov.cold.join(' · ')||'없음'}</p>
-   <p>F~J 적용 필터 · {relaxation[result.markov.relaxed]}</p>
+   <p>A~E 적용 필터 · {relaxation[result.markov.relaxed]}</p>
    {games.length<10&&<p role="status">조건을 충족한 {games.length}조합을 표시했습니다.</p>}
    <div className="controls">
     <button type="button" className="btn btn-primary" disabled={!selected.length} onClick={()=>{
