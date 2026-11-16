@@ -1,72 +1,115 @@
-import {generateFrequencyFilterFive, parseFilterNumbers} from '../core/frequency-filter-five';
-import {MethodHitsTable} from './MethodHits';
-import {buildLowOverlapPortfolio, MIXED_DISPLAY_ORDER, MIXED_EXTRA_NAMES, TOP_TWO_PROBABILITY_PER_TICKET} from '../core/top-two-portfolio';
-import {useEffect,useState} from 'react';import type {Dataset} from '../core/data';import {dataSignature} from '../core/advanced-model';import {loadMethodFive} from '../services/method-five';import {Balls} from './Charts';import DrawAnimation from './DrawAnimation';import {saveSelectedNumbers} from '../services/saved-numbers';
-export default function MethodFive({fallback}:{fallback:Dataset|null}){
- const [file,setFile]=useState<Awaited<ReturnType<typeof loadMethodFive>>|null>(null),[error,setError]=useState(''),[revealed,setRevealed]=useState(false),[animating,setAnimating]=useState(false),[selected,setSelected]=useState<number[]>([]),[note,setNote]=useState('');const signature=fallback?dataSignature(fallback.draws):'';
- useEffect(()=>{const controller=new AbortController();setFile(null);setError('');setRevealed(false);setAnimating(false);setSelected([]);loadMethodFive(fallback,controller.signal).then(setFile).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return()=>controller.abort();},[signature]);
- const [mode,setMode]=useState('frequency-filter');
- const [methods,setMethods]=useState([0,1,2,3,4]);
- const choosing=mode==='selected';
- const adaptive=mode==='adaptive';
- const frequency=mode==='frequency-filter';
+import {useEffect,useRef,useState} from 'react';
+import type {generateCombinedFormulas} from '../core/combined-formulas';
+import type {Dataset} from '../core/data';
+import {dataSignature} from '../core/advanced-model';
+import {parseFilterNumbers} from '../core/frequency-filter-five';
+import {loadMethodFive} from '../services/method-five';
+import {saveSelectedNumbers} from '../services/saved-numbers';
+import {Balls} from './Charts';
+import DrawAnimation from './DrawAnimation';
+
+type CombinedResult = ReturnType<typeof generateCombinedFormulas>;
+const relaxation = ['기본 필터', '합계 78~198까지 확대', '합계 78~198 · 이월수 최대 3개', '합계 78~198 · 이월수 최대 3개 · AC 6 이상'];
+
+export default function MethodFive({fallback}:{fallback:Dataset|null}) {
+ const signature=fallback?dataSignature(fallback.draws):'';
+ const worker=useRef<Worker|null>(null);
+ const [file,setFile]=useState<Awaited<ReturnType<typeof loadMethodFive>>|null>(null);
+ const [result,setResult]=useState<CombinedResult|null>(null);
  const [fixed,setFixed]=useState(''),[excluded,setExcluded]=useState('');
- const [filtered,setFiltered]=useState<(ReturnType<typeof generateFrequencyFilterFive>&{seed:number})|null>(null);
- const count=mode==='five'||choosing||adaptive||frequency?5:10;
- const lowOverlap=mode==='low-overlap';
+ const [error,setError]=useState(''),[note,setNote]=useState('');
+ const [calculating,setCalculating]=useState(false),[animating,setAnimating]=useState(false);
+ const [selected,setSelected]=useState<number[]>([]);
+ const [fresh,setFresh]=useState(false);
+ useEffect(()=>{
+  const controller=new AbortController();
+  setFile(null);setResult(null);setSelected([]);setError('');setNote('');setCalculating(false);setAnimating(false);
+  loadMethodFive(fallback,controller.signal).then(setFile).catch(e=>{if(!controller.signal.aborted)setError((e as Error).message);});
+  return ()=>{controller.abort();worker.current?.terminate();worker.current=null;};
+ },[signature]);
  const r=file?.result;
- const generatedGames=r?(mode==='five'?r.games:(lowOverlap?buildLowOverlapPortfolio(r.seed):file.mixedPortfolio).map((numbers,i)=>(!lowOverlap&&i<5?r.games[i]:{
-  method:'extra-'+i, role:String.fromCharCode(65+i)+' · '+(lowOverlap?'45개 번호 분산':MIXED_EXTRA_NAMES[i-5]), numbers,
-  explanation:lowOverlap?'전체 10조합에서 45개 번호를 모두 사용하고, 두 조합의 공통 번호는 최대 1개':[
-   '1~9, 10~19, 20~29, 30~39, 40~45 중 한 구간에서 최소 3개 포함','최근 100회 다빈도 상위 15개 중 3개 이상 포함',
-   '과거 번호 패턴 없이 6개를 뽑고 나온 순서대로 표시','27·38 포함 · 홀수 2~4개 · 합계 110~165','마르코프·몬테카를로·이론분포를 회차별 무작위 비율로 한 장에 혼합',
-  ][i-5],
-  odd:numbers.filter(n=>n%2).length, low:numbers.filter(n=>n<=22).length, sum:numbers.reduce((a,b)=>a+b,0),
- }))):[];
- const orderedGames=(mode==='mixed'||choosing)&&generatedGames.length===10
-  ? MIXED_DISPLAY_ORDER.map((index,position)=>{
-     const game=generatedGames[index];
-     return {...game,role:String.fromCharCode(65+position)+game.role.slice(1)};
-    })
-  : generatedGames;
- const adaptiveResult=file?.hits.adaptive;
- const adaptiveReady=!!adaptiveResult&&adaptiveResult.targetRound===r?.targetRound;
- const games=frequency
-  ? (filtered?.games??[]).map((game,i)=>({...game,method:'frequency-filter-'+i,
-      role:String.fromCharCode(65+i)+' · 빈도 가중 필터',explanation:''}))
-  : adaptive
-  ? (adaptiveReady?adaptiveResult?.tickets:undefined)?.map((numbers,i)=>({
-      method:'adaptive-'+i, role:String.fromCharCode(65+i)+' · 공개 구조 자동 조정',numbers,
-      explanation:'이론·실제 출현율 비교, 그룹 필터, 탈락 후보 복구와 압축을 반영',
-      odd:numbers.filter(n=>n%2).length,low:numbers.filter(n=>n<=22).length,sum:numbers.reduce((a,b)=>a+b,0),
-    }))??[]
-  : choosing?orderedGames.filter((_,i)=>methods.includes(i)):orderedGames;
- function clearResult(){
-  setRevealed(false);setSelected([]);setNote('');setFiltered(null);
+ const games=result?[
+  ...result.frequency.map((game,i)=>({...game,slot:String.fromCharCode(65+i),label:'조정 빈도 가중 필터',explanation:''})),
+  ...result.markov.games.map((game,i)=>({...game,slot:String.fromCharCode(70+i),label:'마르코프·몬테카를로·이론분포',
+   explanation:'핫 '+game.counts[0]+' · 중립 '+game.counts[1]+' · 콜드 '+game.counts[2]+' · 점수 '+game.score.toFixed(2)})),
+ ]:[];
+ const busy=calculating||animating;
+ function clear(){setResult(null);setSelected([]);setNote('');}
+ function show(pack:CombinedResult){
+  setResult(pack);setAnimating(pack.frequency.length+pack.markov.games.length>0);
  }
- function confirmGames(newSeed=false){
-  clearResult();
-  if(frequency&&file&&r){
-   try {
-    const seed=newSeed?crypto.getRandomValues(new Uint32Array(1))[0]:r.seed;
-    const result=generateFrequencyFilterFive(file.draws,seed,parseFilterNumbers(fixed),parseFilterNumbers(excluded));
-    setFiltered({...result,seed});
-    if(!result.games.length){setRevealed(true);return;}
-   } catch(error){setNote((error as Error).message);return;}
-  }
-  setAnimating(true);
+ function recommend(newSeed:boolean){
+  if(!file||!r||busy)return;
+  clear();setFresh(newSeed);
+  try{
+   const fixedNumbers=parseFilterNumbers(fixed),excludedNumbers=parseFilterNumbers(excluded);
+   const seed=newSeed?crypto.getRandomValues(new Uint32Array(1))[0]:r.seed;
+   const prepared=file.hits.upcoming;
+   if(!newSeed&&!fixedNumbers.length&&!excludedNumbers.length&&prepared?.targetRound===r.targetRound&&prepared.seed===seed){show(prepared);return;}
+   const task=new Worker(new URL('../workers/markov-monte-carlo.worker.ts',import.meta.url),{type:'module'});
+   worker.current=task;setCalculating(true);
+   const finish=()=>{task.terminate();worker.current=null;setCalculating(false);};
+   task.onmessage=({data}:MessageEvent<CombinedResult|{error:string}>)=>{
+    finish();if('error' in data)setNote(data.error);else show(data);
+   };
+   task.onerror=()=>{finish();setNote('시뮬레이션을 완료하지 못했습니다. 다시 시도해 주세요.');};
+   task.postMessage({history:file.draws,seed,fixed:fixedNumbers,excluded:excludedNumbers,combined:true});
+  }catch(e){worker.current?.terminate();worker.current=null;setCalculating(false);setNote((e as Error).message);}
  }
- return <div className="method-five"><section className="panel"><h2>{frequency?'최근 100회 · 빈도 가중 필터':adaptive?'전체 이력 · 자동 조정 5조합':'최근 100회 · 번호 추천'}</h2>{mode==='mixed'&&<p>기존 5조합에 한 번호대 3개 이상, 최근 100회 다빈도, 추첨 순서 그대로, 27·38 패턴, 세 방식 무작위 비율 혼합 조합을 한 장씩 더합니다.</p>}{mode==='five'&&<><p>마르코프 · 몬테카를로 · 이론분포 · 세 방법 결합 · 네 방식 제외 후 남은 번호에서 한 조합씩, <strong>번호 6개 × 총 5조합</strong>을 제공합니다.</p><p className="muted">고정된 2,000개 후보의 상위 5개를 고르지 않습니다. 각 방법으로 직접 추출합니다. 마지막 조합은 앞 네 조합의 24개 번호를 제외한 21개 중 6개를 균등하게 뽑습니다. 계산은 배포 전에 수행합니다.</p></>}{lowOverlap&&<p>45개 번호를 모두 사용하며, 어느 두 조합도 번호가 1개를 초과해 겹치지 않습니다.</p>}{r?<p className="advanced-status">{adaptive?'제1회부터 제'+r.last.round+'회까지 · 전체 이력 분석':r.first.round+'~'+r.last.round+'회 ('+r.first.date+'~'+r.last.date+') · 100회 분석'} · <b>{r.targetRound}회 대상</b></p>:<p role="status">{error||'최근 100회 분석 불러오는 중…'}</p>}<div className="controls" aria-label="추천 장수">
- <button type="button" className={count===5?'btn btn-primary':'btn btn-white'} aria-pressed={count===5} disabled={animating} onClick={()=>{setMode('frequency-filter');setRevealed(false);setSelected([]);setNote('');}}>5장 추천</button>
- <button type="button" className={count===10?'btn btn-primary':'btn btn-white'} aria-pressed={count===10} disabled={animating} onClick={()=>{setMode('mixed');setRevealed(false);setSelected([]);setNote('');}}>10장 추천</button>
- </div><label>추천 방식 <select value={mode} disabled={animating} onChange={e=>{setMode(e.target.value);setRevealed(false);setSelected([]);setNote('');}}><option value="frequency-filter">조정 빈도 가중 필터 · 최대 5조합</option><option value="adaptive">공개 구조 기반 자동 조정 · 5조합</option><option value="selected">방식 직접 선택 · 5조합</option><option value="five">기존 5조합</option><option value="mixed">기존 5방식 + 추가 5방식 · 10조합</option><option value="low-overlap">45개 번호 분산 · 10조합</option></select></label>{choosing&&<fieldset disabled={animating||!r}><legend>추천 방식 선택 ({methods.length}/5)</legend><div className="controls">{orderedGames.map((game,i)=><label key={game.method}><input type="checkbox" checked={methods.includes(i)} disabled={methods.length===5&&!methods.includes(i)} onChange={e=>{setMethods(e.target.checked?[...methods,i]:methods.filter(n=>n!==i));setRevealed(false);setSelected([]);setNote('');}}/>{game.role}</label>)}</div></fieldset>}{frequency&&<fieldset disabled={animating||!r}><legend>번호 조건</legend><p className="muted">합계 120~155 · 빈도 가중치 0.15 · AC 7 이상</p>
- <div className="controls">
-  <label>고정수 (최대 5개)<input value={fixed} placeholder="예시 3, 11" onChange={e=>{setFixed(e.target.value);clearResult();}}/></label>
-  <label>제외수<input value={excluded} placeholder="예시 2, 19" onChange={e=>{setExcluded(e.target.value);clearResult();}}/></label>
- </div><p className="muted">빈칸이면 조건을 적용하지 않습니다. 고정수가 4개 이상이면 조합 간 겹침 제한 때문에 최대 1조합까지 가능합니다.</p></fieldset>}{adaptive&&<p role="status">{adaptiveReady?'최신 확정 회차까지 반영해 사전 계산한 5조합입니다.':'이 회차의 자동 조정 5조합을 준비 중입니다.'}</p>}{count===10&&<p>공정한 추첨에서 2등 이상이 한 장이라도 나올 확률 {(10*TOP_TWO_PROBABILITY_PER_TICKET*100).toFixed(5)}%</p>}<button className="btn btn-primary" disabled={!r||animating||(adaptive&&!games.length)||(choosing&&methods.length!==5)} onClick={()=>confirmGames()}>{frequency?'메인 추천번호':animating?'공을 굴리는 중…':count+'조합 확인'}</button>{frequency&&<button type="button" className="btn btn-white" disabled={!r||animating} onClick={()=>confirmGames(true)}>새로운 시드번호 받기</button>}{frequency&&!revealed&&note&&<p role="alert">{note}</p>}<p className="choice-notice">{frequency?'메인은 같은 회차와 조건에서 고정됩니다. 대시보드는 고정수·제외수 없이 뽑은 메인 5조합을 기준으로 집계합니다.':'같은 회차에는 고정한 동일한 추천을 제공합니다.'}</p></section>
- {r&&animating&&games.length>0&&<DrawAnimation key={frequency?filtered?.seed:r.seed} numbers={games[0].numbers} games={games.length} onComplete={()=>{setAnimating(false);setRevealed(true);}}/>}
- {r&&revealed&&<section className="panel"><h2>{r.targetRound}회 대상 · {games.length}조합</h2>{frequency&&filtered&&<p role="status">{filtered.attempts.toLocaleString()}회 시도 · {games.length<5?'모은 조합만 표시합니다.':'5조합 채택 완료'}</p>}<div className="choice-results">{games.map((g,i)=><article className="choice-ticket" key={g.method}><div className="ticket-meta"><strong>{g.role}</strong><label className="pick-game"><input type="checkbox" aria-label={`${i+1}게임 선택`} checked={selected.includes(i)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,i]:prev.filter(n=>n!==i))}/>이 조합 선택</label></div><Balls numbers={g.numbers}/><p className="muted">{g.explanation}</p><small>홀수 {g.odd} · 짝수 {6-g.odd} · 저구간 {g.low} · 고구간 {6-g.low} · 합계 {g.sum}{'ac' in g?' · AC '+g.ac:''}</small></article>)}</div><div className="controls"><button className="btn btn-primary" disabled={!selected.length} onClick={()=>{try{const savedCount=saveSelectedNumbers(selected.map(i=>games[i].numbers),r.targetRound,(lowOverlap?'45개 번호 분산 · 10조합':frequency?'빈도 가중 필터':adaptive?'공개 구조 기반 자동 조정 5조합':choosing?'선택 방식 5조합':count===5?'최근100회 방법별5조합':'최근100회 2등 이상 목표 10조합'),{signature:(adaptive||frequency)?r.sourceSignature:r.historySignature,settingsVersion:frequency?'frequency-filter-five-v2':adaptive?'adaptive-five-v1':r.version,seed:frequency?filtered?.seed??r.seed:r.seed,budget:frequency?200000:0,count:games.length,path:lowOverlap?'low-overlap-portfolio':frequency?'frequency-filter-five-v2':adaptive?'adaptive-five-v1':choosing?'selected-methods-five':count===5?'direct-method-five':'original-five-plus-five-draw-order',lastRound:r.last.round,targetRound:r.targetRound,generatedAt:r.generatedAt,lastDrawDate:r.last.date});setNote(`${savedCount}조합을 저장했습니다.`);}catch(e){setNote((e as Error).message);}}}>선택한 {selected.length}조합 저장</button><button className="btn btn-white" disabled={!games.length} onClick={async()=>{try{await navigator.clipboard.writeText(games.map(g=>`${g.role}: ${g.numbers.join(', ')}`).join('\n'));setNote(games.length+'조합을 복사했습니다.');}catch{setNote('복사 권한을 확인해 주세요.');}}}>{games.length}조합 복사</button></div><p role="status">{note}</p></section>}
- {file&&!adaptive&&!frequency&&<MethodHitsTable hits={file.hits} mode={choosing?'mixed':mode} indices={choosing?methods:undefined}/>}
- {file&&r&&!frequency&&<><details className="panel"><summary>최근100회 확정 당첨번호에서 찾은 관찰 패턴</summary><p>{r.pattern.firstRound}~{r.pattern.lastRound}회 · 보너스 제외 · 선택 조건 동시 관찰 {r.pattern.jointHits}/100회</p><ul>{r.pattern.evaluations.map(p=><li key={p.rule.id}>{p.rule.label}: {p.hits}/100회 · {p.used?'관찰 집계 기준 통과 · 추천 필터 미적용':`동시 조건 ${p.jointIfAdded}회로 선정 기준 미달 · 제외`}</li>)}</ul><p className="muted">{r.pattern.note}</p></details><details className="panel"><summary>200회 검증 결과 · 향상 미검증</summary><p>{file.validation.first.round}~{file.validation.last.round}회 · 각 방식 매회 5조합 · 회차 직전 정보만 사용</p><div className="table-scroll"><table><thead><tr><th>방식</th><th>평균 일치</th><th>등수별 당첨 조합</th><th>당첨 회차</th></tr></thead><tbody>{Object.entries(file.validation.metrics).map(([key,m])=><tr key={key}><th>{{full:'기존 전체이력',recent100:'기존 분석·최근100회',methodFive:'새 방법별5조합',uniform:'균등 무작위 기준'}[key]??key}</th><td>{m.averageMatches.toFixed(3)}</td><td>{m.rankCounts.map((n,i)=>`${i+1}등 ${n}`).join(" · ")}</td><td>{m.winningRounds}/{m.rounds}</td></tr>)}</tbody></table></div><p className="choice-notice">{file.validation.note}</p>{file.validation.frozen&&<details><summary>현재 5조합의 과거200회 단순 대입 · 예측 검증 아님</summary><p>{file.validation.frozen.warning}</p><p>{file.validation.frozen.rankCounts.map((n,i)=>`${i+1}등 ${n}조합`).join(' · ')}</p></details>}</details><details className="panel"><summary>분석 원리·재현 정보·당첨 범위</summary><p>시드 {r.seed} · 생성 {new Date(r.generatedAt).toLocaleString('ko-KR')} · 고정 후보 풀 없음 · 수락 시도 {r.games.map(g=>`${g.method} ${g.attempts}회`).join(' / ')}</p><p>현재 5조합 중 하나라도 5등 이상인 수학적 경우의 수: {r.coverage.covered.toLocaleString()} / {r.coverage.total.toLocaleString()} ({(r.coverage.probability*100).toFixed(4)}%). 미래 예측 성능이 아니라 공정한 추첨에서의 묶음 구성 계산입니다. 개인 조합의 1등 확률 상승을 뜻하지 않습니다.</p>{r.notes.map((n,i)=><p key={i} className="muted">{n}</p>)}</details></>}
+ return <div className="method-five">
+  <section className="panel">
+   <h2>두 공식으로 추천 10조합</h2>
+   <p role="status">{r?'제'+r.targetRound+'회 대상 · 제'+r.last.round+'회까지 반영':error||'확정 당첨 기록을 불러오는 중…'}</p>
+   <h3>A~E · 조정 빈도 가중 필터</h3>
+   <p>최근 100회 본번호의 출현 빈도에 계수 0.15를 적용해 가중 추출합니다. 합계 120~155, 홀짝과 저고 각각 2:4~4:2, AC 7 이상을 만족하는 조합을 최대 5장 채택합니다.</p>
+   <h3>F~J · 마르코프·몬테카를로·이론분포</h3>
+   <p>전체 회차의 번호 간 전이확률과 최근 100회 빈도 점수를 50:50으로 합쳐 100만 회 추출합니다. 이론분포 필터를 통과한 조합을 번호별 시뮬레이션 출현율의 로그 합과 핫·중립·콜드 2:2:2에 가까운 정도로 채점해 최대 5장을 선정합니다.</p>
+   <details><summary>두 공식의 필터 상세</summary>
+    <p>기본 조건은 연속번호 최대 1쌍, 한 번호 구간에 최대 3개, 같은 끝자리 최대 2개, 직전 본번호와 최대 2개 겹침, 역대 1등 조합 제외입니다. 각 공식 안에서 두 장이 4개 이상 겹치면 제외하며, 두 공식이 같은 조합을 내면 새 공식에서 그 조합을 건너뜁니다.</p>
+    <p>F~J는 기본 합계 108~168을 적용합니다. 5장을 못 채우면 합계 78~198, 이월수 3개 허용, AC 6 이상 순서로 완화합니다. 핫수와 콜드수는 전체 이력 출현 빈도의 Z점수 +1 이상과 -1 이하로 구분합니다.</p>
+   </details>
+   <fieldset disabled={busy||!r}><legend>고정수·제외수 (선택)</legend><div className="controls">
+    <label>고정수 (최대 5개)<input value={fixed} placeholder="예시 3, 11" onChange={e=>{setFixed(e.target.value);clear();}}/></label>
+    <label>제외수<input value={excluded} placeholder="예시 2, 19" onChange={e=>{setExcluded(e.target.value);clear();}}/></label>
+   </div></fieldset>
+   <div className="controls">
+    <button type="button" className="btn btn-primary" disabled={busy||!r} onClick={()=>recommend(false)}>메인 추천번호</button>
+    <button type="button" className="btn btn-white" disabled={busy||!r} onClick={()=>recommend(true)}>새로운 시드번호 받기</button>
+   </div>
+   <p className="muted">조건을 비운 메인 추천은 대시보드와 같습니다. 새 시드 추천은 두 공식을 다시 실행합니다. 조건에 따라 10장보다 적을 수 있습니다.</p>
+   {calculating&&<p role="status">100만 회 시뮬레이션 계산 중…</p>}
+   {!result&&note&&<p role="alert">{note}</p>}
+  </section>
+  {animating&&games.length>0&&<DrawAnimation key={result?.seed} numbers={games[0].numbers} games={games.length} onComplete={()=>setAnimating(false)}/>}
+  {r&&result&&!animating&&<section className="panel">
+   <h2>제{r.targetRound}회 · {fresh?'새 시드 추천':'메인 추천'} {games.length}조합</h2>
+   <div className="choice-results">{games.map((game,index)=><article className="choice-ticket" key={game.slot}>
+    <div className="ticket-meta"><strong>{game.slot} · {game.label}</strong><label className="pick-game">
+     <input type="checkbox" aria-label={game.slot+' 조합 선택'} checked={selected.includes(index)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,index]:prev.filter(n=>n!==index))}/>이 조합 선택
+    </label></div><Balls numbers={game.numbers}/>
+    <small>합계 {game.sum} · 홀짝 {game.odd}:{6-game.odd} · 저고 {game.low}:{6-game.low} · AC {game.ac}</small>
+    {game.explanation&&<p className="muted">{game.explanation}</p>}
+   </article>)}</div>
+   <p>기준 제{result.markov.lastRound}회 · 시뮬레이션 {result.markov.simulations.toLocaleString()}회 · 시드 {result.seed}</p>
+   <p>핫수 {result.markov.hot.join(' · ')||'없음'} / 콜드수 {result.markov.cold.join(' · ')||'없음'}</p>
+   <p>F~J 적용 필터 · {relaxation[result.markov.relaxed]}</p>
+   {games.length<10&&<p role="status">조건을 충족한 {games.length}조합을 표시했습니다.</p>}
+   <div className="controls">
+    <button type="button" className="btn btn-primary" disabled={!selected.length} onClick={()=>{
+     try{
+      const count=saveSelectedNumbers(selected.map(index=>games[index].numbers),r.targetRound,'두 공식 추천',{
+       signature:r.sourceSignature,settingsVersion:'combined-formulas-v1',seed:result.seed,budget:result.markov.simulations,
+       count:games.length,path:'combined-formulas',lastRound:r.last.round,targetRound:r.targetRound,generatedAt:r.generatedAt,lastDrawDate:r.last.date});
+      setNote(count+'조합을 저장했습니다.');
+     }catch(e){setNote((e as Error).message);}
+    }}>선택한 {selected.length}조합 저장</button>
+    <button type="button" className="btn btn-white" disabled={!games.length} onClick={async()=>{
+     try{await navigator.clipboard.writeText(games.map(g=>g.slot+' · '+g.numbers.join(', ')).join('\n'));setNote(games.length+'조합을 복사했습니다.');}
+     catch{setNote('복사 권한을 확인해 주세요.');}
+    }}>{games.length}조합 복사</button>
+   </div>
+   <p role="status">{note}</p>
+   <p className="muted">※ 모든 조합의 1등 확률은 1/8,145,060로 같습니다. 참고용입니다.</p>
+  </section>}
  </div>;
 }
