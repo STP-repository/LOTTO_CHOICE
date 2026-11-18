@@ -5,7 +5,7 @@
   "generations": 300,
   "rows": [
     {
-      "label": "메인 시드",
+      "label": "변경 전 메인",
       "tickets": 1000,
       "ranks": [
         0,
@@ -14,19 +14,34 @@
         0,
         14
       ],
-      "winRounds": 12
+      "winRounds": 12,
+      "meanMatches": 0.767
     },
     {
-      "label": "새 시드",
+      "label": "변경 후 메인",
+      "tickets": 1000,
+      "ranks": [
+        0,
+        0,
+        1,
+        0,
+        14
+      ],
+      "winRounds": 12,
+      "meanMatches": 0.767
+    },
+    {
+      "label": "변경 후 새 시드",
       "tickets": 1000,
       "ranks": [
         0,
         0,
         0,
         2,
-        19
+        18
       ],
-      "winRounds": 16
+      "winRounds": 15,
+      "meanMatches": 0.768
     }
   ],
   "best": {

@@ -35,7 +35,7 @@ export function IntegratedBacktest() {
  const {best}=recent;
  const {first,last,rows}=integratedBacktest;
  const percent=(value:number)=>(100*value).toFixed(2)+'%';
- return <section className="panel method-hits weekly-check"><h2>최근 100회 · 메인 시드와 새 시드</h2>
+ return <section className="panel method-hits weekly-check"><h2>최근 100회 · 번호대 분산 조건 비교</h2>
   <p>제{recent.first}~{recent.last}회 · 매회 시드별 A~J 10조합 · 공식별 시뮬레이션 {recent.simulations.toLocaleString()}회 · 최대 {recent.generations}세대</p>
   <table className="method-hits-table seed-hits-table"><thead><tr><th scope="col">시드</th>{[1,2,3,4,5].map(rank=><th scope="col" key={rank}>{rank}등</th>)}<th scope="col">합계</th><th scope="col">당첨 회차</th></tr></thead>
    <tbody>{recent.rows.map(row=><tr key={row.label}><th scope="row">{row.label}</th>{row.ranks.map((count,i)=><td key={i}>{count}</td>)}
@@ -43,6 +43,7 @@ export function IntegratedBacktest() {
   <div className="weekly-check-draw"><div><p>최고 3등 · 제{best.round}회 메인 {best.slot}조합 · 본번호 {best.matched.length}개 일치</p>
    <WeeklyNumbers numbers={best.numbers} matched={best.matched}/></div></div>
   <p>당시 확정된 이력으로 다시 생성한 결과입니다. 새 시드는 회차당 한 번을 비교했습니다.</p>
+  <p>변경 후에는 직전 본번호에서 3개 이상 나온 번호대가 다시 3개 이상 들어가는 조합을 A~E 중 최대 한 장으로 제한했습니다.</p>
   <details><summary>이전 F~J 통합 공식 검증</summary>
   <p>제{first}~{last}회 · 매회 직전까지 확정된 기록 사용 · 검증용 추첨 10만 회·최대 100세대</p>
   <table className="method-hits-table"><thead><tr><th scope="col">비교 방식</th><th scope="col">평균 일치</th><th scope="col">조합 당첨률</th><th scope="col">세트 당첨률</th></tr></thead>

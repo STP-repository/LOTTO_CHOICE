@@ -42,7 +42,8 @@ const adaptive = {targetRound, ...generateAdaptiveFive(draws, methodSeed(targetR
 const upcoming = {targetRound, ...generateRecommendationPack(draws, methodSeed(targetRound))};
 const settled = draws.at(-1)!;
 const recorded = previous.upcoming?.targetRound === settled.round ? previous.upcoming : undefined;
-const previousResult = previous.combinedLatest?.draw.round === settled.round ? previous.combinedLatest : undefined;
+const previousResult = previous.combinedLatest?.draw.round === settled.round && !previous.combinedLatest.replayed
+  ? previous.combinedLatest : undefined;
 const pastPack = previousResult ?? (() => {
   const replay = previous.upcoming && 'integrated' in previous.upcoming ? generateRecommendationPack : generateCombinedFormulas;
   const pack = recorded ?? replay(draws.slice(0, -1), methodSeed(settled.round));
