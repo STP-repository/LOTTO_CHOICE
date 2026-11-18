@@ -110,12 +110,18 @@ export function generateMarkovMonteCarloFive(
   budget = SIMULATION_COUNT,
 ) {
   const {ranked, simulations, hot, cold, lastRound} = buildMarkovCandidates(history, seed, fixed, excluded, alreadySelected, budget);
+  // Decimal decades match the displayed 20번대 definition (20 through 29).
+  const crowdedDecades = [0, 1, 2, 3, 4].filter(decade =>
+    history.at(-1)!.numbers.filter(number => Math.floor(number / 10) === decade).length >= 3);
   let games: typeof ranked = [];
   let tier = 0;
   for (; tier <= 3; tier++) {
     games = [];
     for (const candidate of ranked) {
       if (candidate.tier > tier || games.some(game => overlap(game.numbers, candidate.numbers) >= 4)) continue;
+      if (crowdedDecades.some(decade =>
+        candidate.numbers.filter(number => Math.floor(number / 10) === decade).length >= 3 &&
+        games.some(game => game.numbers.filter(number => Math.floor(number / 10) === decade).length >= 3))) continue;
       games.push(candidate);
       if (games.length === 5) break;
     }
