@@ -39,7 +39,7 @@ test('일반 고급 백테스트는 설정을 고정하고 5·10·15조합과 �
  for(const count of [5,10,15]){
   const report=validateAdvanced(draws,2000,42,new Date(),undefined,{count,rounds:2});
   assert.equal(report.base.games,count*2);assert.equal(report.random.games,count*2);assert.equal(report.tuned,false);assert.deepEqual(report.weights,BASE_WEIGHTS);
-  const changed=structuredClone(draws);changed.at(-1).numbers=[1,2,3,4,5,6];
+  const changed=structuredClone(draws);changed.at(-1).numbers=[1,2,3,4,5,6];changed.at(-1).bonus=7;
   const after=validateAdvanced(changed,2000,42,new Date(),undefined,{count,rounds:1});assert.deepEqual(report.rows.at(-1)!.models.base.games,after.rows.at(-1)!.models.base.games);
  }
 });
