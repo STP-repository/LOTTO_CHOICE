@@ -31,12 +31,13 @@ export function weightedIndex(weights: number[], random: () => number) {
   for (let i = 0; i < weights.length; i++) { pick -= weights[i]; if (pick < 0) return i; }
   return weights.length - 1;
 }
-export function selectPatternNumbers(profile: ReturnType<typeof patternProfile>, count: number, random: () => number) {
+export function selectPatternNumbers(profile: ReturnType<typeof patternProfile>, count: number, random: () => number,
+  fixed:number[] = [], excluded:number[] = []) {
   const candidates: { numbers: number[]; rating: number }[] = [], seen = new Set<string>();
   for (let attempt = 0; attempt < 50_000 && candidates.length < count * 30; attempt++) {
-    const pool = Array.from({ length: 45 }, (_, i) => i + 1);
-    for (let j = 0; j < 6; j++) { const k = j + Math.floor(random() * (45 - j)); [pool[j], pool[k]] = [pool[k], pool[j]]; }
-    const ns = pool.slice(0, 6).sort((a, b) => a - b), key = ns.join(',');
+    const pool = Array.from({ length: 45 }, (_, i) => i + 1).filter(n=>!fixed.includes(n)&&!excluded.includes(n));
+    for (let j = 0; j < 6-fixed.length; j++) { const k = j + Math.floor(random() * (pool.length - j)); [pool[j], pool[k]] = [pool[k], pool[j]]; }
+    const ns = [...fixed,...pool.slice(0, 6-fixed.length)].sort((a, b) => a - b), key = ns.join(',');
     if (seen.has(key)) continue;
     seen.add(key);
     const odd = ns.filter(n => n % 2).length, c = consecutivePairs(ns), overlap = ns.filter(n => profile.last.numbers.includes(n)).length;

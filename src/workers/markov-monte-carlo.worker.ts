@@ -1,5 +1,5 @@
 import type {Draw} from '../core/data';
-import {generateRecommendationPack,recommendationIdentity} from '../core/combined-formulas';
+import {generateSelectedFive,selectedIdentity} from '../core/selected-five';
 
 interface Request {
   history: Draw[];
@@ -14,8 +14,8 @@ self.onmessage = ({data}: MessageEvent<Request>) => {
     const {history, seed, fixed, excluded, avoid} = data;
     let nextSeed=seed;
     for(let attempt=0;attempt<3;attempt++){
-      const pack=generateRecommendationPack(history,nextSeed,fixed,excluded);
-      if(!avoid.includes(recommendationIdentity(pack))){self.postMessage(pack);return;}
+      const pack=generateSelectedFive(history,nextSeed,fixed,excluded);
+      if(!avoid.includes(selectedIdentity(pack))){self.postMessage(pack);return;}
       nextSeed=crypto.getRandomValues(new Uint32Array(1))[0];
     }
     throw Error('다른 조합을 찾지 못했습니다. 고정수나 제외수를 조정하거나 다시 시도해 주세요.');

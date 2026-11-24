@@ -62,52 +62,68 @@ function WeeklyNumbers({numbers,matched=[],bonus}:{numbers:readonly number[];mat
  })}</div>;
 }
 
+export function SelectedHistory({data}:{data?:import('../services/method-five').SelectedFiveData}) {
+ if(!data)return null;
+ const rows=data.history.rows;
+ return <section className="panel method-hits"><h2>다섯 방식 · 과거 당첨 대조</h2>
+  <p>제{rows[0]?.draw.round}~{rows.at(-1)?.draw.round}회 · 매회 5조합 · 과거 결과로 선택한 설정의 사후 재현입니다.</p>
+  <table className="method-hits-table"><thead><tr><th>추천 방식</th>{[1,2,3,4,5].map(rank=><th key={rank}>{rank}등</th>)}</tr></thead>
+   <tbody>{data.history.totals.map((ranks,i)=><tr key={i}><th scope="row">{String.fromCharCode(65+i)} · {data.upcoming.games[i].label}</th>
+    {ranks.map((count,j)=><td key={j}>{count}</td>)}</tr>)}</tbody></table>
+  <p>추첨 전에 저장한 추천의 실제 결과는 최근 당첨 결과에서 별도로 표시합니다.</p>
+ </section>;
+}
+
 export default function DashboardMethodHits({signature}:{signature:string}) {
  const [hits,setHits]=useState<MethodHits|null>(null);
  const [error,setError]=useState('');
  const [tab,setTab]=useState<'latest'|'upcoming'|'history'>('latest');
  useEffect(()=>{
   const controller=new AbortController();
-  setHits(null);setError('');
-  fetch(import.meta.env.BASE_URL+'data/method-hits.json',{cache:'no-store',signal:controller.signal})
-   .then(response=>{if(!response.ok)throw Error();return response.json() as Promise<MethodHits>;})
-   .then(setHits).catch(()=>{if(!controller.signal.aborted)setError('당첨 횟수 자료를 불러오지 못했습니다.');});
-  return ()=>controller.abort();
+  const refresh=()=>fetch(import.meta.env.BASE_URL+'data/method-hits.json',{cache:'no-store',signal:controller.signal})
+   .then(response=>{if(!response.ok)throw Error('당첨 자료 응답 오류');return response.json() as Promise<MethodHits>;})
+   .then(value=>{setHits(value);setError('');}).catch(()=>{if(!controller.signal.aborted)setError('당첨 자료를 갱신하지 못했습니다.');});
+  void refresh();
+  const timer=setInterval(()=>{if(document.visibilityState==='visible')void refresh();},60_000);
+  return ()=>{controller.abort();clearInterval(timer);};
  },[signature]);
- const current=hits?.signature===signature&&hits.totals['frequency-filter']?hits:null;
- const latest=current?.combinedLatest;
- const upcoming=current?.upcoming;
+ const data=hits?.signature===signature?hits.selected:undefined;
+ const latest=data?.latest;
+ const upcoming=data?.upcoming;
+ const actualBest=data?.archive.flatMap(row=>row.tickets.filter(ticket=>ticket.rank).map(ticket=>ticket.rank!)).sort((a,b)=>a-b)[0];
  return <div className="weekly-check">
   <div className="segmented" role="group" aria-label="추천 당첨 내역">
    <button type="button" className={tab==='latest'?'selected':''} aria-pressed={tab==='latest'} onClick={()=>setTab('latest')}>최근 당첨 결과</button>
    <button type="button" className={tab==='upcoming'?'selected':''} aria-pressed={tab==='upcoming'} onClick={()=>setTab('upcoming')}>이번 주 추천번호</button>
    <button type="button" className={tab==='history'?'selected':''} aria-pressed={tab==='history'} onClick={()=>setTab('history')}>과거 당첨 횟수</button>
   </div>
-  {!current?<section className="panel method-hits"><p role="status">{error||(hits?'최신 회차의 당첨 자료를 갱신 중입니다.':'당첨 내역 불러오는 중…')}</p></section>
-   :tab==='history'?<><IntegratedBacktest/><MethodHitsTable hits={current} mode="frequency-filter"/></>
-   :tab==='upcoming'?<section className="panel method-hits"><h2>이번 주 메인 추천번호</h2>
-    {upcoming?<><p>제{upcoming.targetRound}회 · 시드 {upcoming.seed} · 고정수·제외수 미지정</p>
-     <div className="weekly-check-groups">{[upcoming.markov.games,'integrated' in upcoming?upcoming.integrated.games:upcoming.frequency].map((games,group)=>{
-      const {firstSlot}=recommendationGroups[group];
-      const name=group===0?markovName:'integrated' in upcoming?integratedName:tunedName;
-      return <section key={name}><h3>{name}</h3><ul>{games.map((game,i)=><li key={i}>
-       <strong>{String.fromCharCode(firstSlot+i)}</strong><WeeklyNumbers numbers={game.numbers}/>
-      </li>)}</ul></section>;
-     })}</div></>:<p>이번 주 메인 추천번호를 준비 중입니다.</p>}
-   </section>:<section className="panel method-hits">
-    {latest?<><h2>제{latest.draw.round}회 당첨 결과</h2>
-     <p>{latest.draw.date} · {latest.replayed?'추첨 직전 데이터로 사후 재현한 조합':'추첨 전에 저장한 메인 조합'}</p>
-     <div className="weekly-check-draw"><div><p>실제 당첨번호</p><WeeklyNumbers numbers={latest.draw.numbers} matched={latest.draw.numbers}/></div>
-      <div><p>보너스</p><WeeklyNumbers numbers={[latest.draw.bonus]} bonus={latest.draw.bonus}/></div></div>
-     <p><span className="weekly-check-key is-match">본번호 일치</span> <span className="weekly-check-key is-bonus">보너스 일치</span> · {latest.tickets.length}조합 중 {latest.tickets.filter(ticket=>ticket.rank).length}장 당첨</p>
-     <div className="weekly-check-groups">{[latest.tickets.slice(latest.frequencyCount),latest.tickets.slice(0,latest.frequencyCount)].map((tickets,group)=>{
-      const {firstSlot}=recommendationGroups[group];
-      const name=group===0?markovName:latest.integrated?integratedName:tunedName;
-      return <section key={name}><h3>{name}</h3><ul>{tickets.map((ticket,i)=><li key={i}>
-       <strong>{String.fromCharCode(firstSlot+i)}</strong><WeeklyNumbers numbers={ticket.numbers} matched={ticket.matched} bonus={latest.draw.bonus}/>
-       <span className="weekly-check-result">{ticket.matched.length}개 일치 · {ticket.rank?ticket.rank+'등':'낙첨'}</span>
-      </li>)}</ul></section>;
-     })}</div></>:<><h2>최근 추첨 결과</h2><p>최근 추첨 결과를 준비 중입니다.</p></>}
-   </section>}
+  {!data?<section className="panel method-hits"><p role="status">{error||'다섯 방식의 최신 추천·당첨 자료를 불러오는 중…'}</p></section>
+   :tab==='history'?<SelectedHistory data={data}/>
+   :tab==='upcoming'&&upcoming?<section className="panel method-hits"><h2>제{upcoming.targetRound}회 메인 추천 5조합</h2>
+    <p>제{upcoming.lastRound}회까지 반영 · 시드 {upcoming.seed}</p>
+    <div className="weekly-check-groups"><section><ul>{upcoming.games.map(game=><li key={game.slot}>
+     <div className="selected-ticket-label"><strong>{game.slot}</strong> {game.label}</div><WeeklyNumbers numbers={game.numbers}/>
+    </li>)}</ul></section></div>
+   </section>:latest?<div className="weekly-result-grid"><section className="panel method-hits">
+    <h2>제{latest.draw.round}회 당첨 결과</h2>
+    <p>{latest.draw.date} · {latest.replayed?'현재 다섯 방식으로 사후 재현':'추첨 전에 저장한 메인 추천'}</p>
+    <div className="weekly-check-draw"><div><p>실제 당첨번호</p><WeeklyNumbers numbers={latest.draw.numbers} matched={latest.draw.numbers}/></div>
+     <div><p>보너스</p><WeeklyNumbers numbers={[latest.draw.bonus]} bonus={latest.draw.bonus}/></div></div>
+    <p><span className="weekly-check-key is-match">본번호 일치</span> <span className="weekly-check-key is-bonus">보너스 일치</span> · 5조합 중 {latest.tickets.filter(ticket=>ticket.rank).length}장 당첨</p>
+    <div className="weekly-check-groups"><section><ul>{latest.tickets.map(ticket=><li key={ticket.slot}>
+     <div className="selected-ticket-label"><strong>{ticket.slot}</strong> {ticket.label}</div>
+     <WeeklyNumbers numbers={ticket.numbers} matched={ticket.matched} bonus={latest.draw.bonus}/>
+     <span className="weekly-check-result">{ticket.matched.length}개 일치 · {ticket.rank?ticket.rank+'등':'낙첨'}</span>
+    </li>)}</ul></section></div>
+    <p>갱신 {new Date(data.updatedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})}</p>
+   </section><aside className="panel method-hits selected-best">
+    <h2>역대 최고 등수</h2>
+    <p>과거 재현 · 제{data.history.rows[0]?.draw.round}~{data.history.rows.at(-1)?.draw.round}회</p>
+    <strong className="selected-best-rank">{data.history.best?data.history.best.rank+'등':'당첨 없음'}</strong>
+    {data.history.best&&<p>제{data.history.best.round}회 · {data.history.best.slot}조합</p>}
+    <p>과거 결과를 보고 설정을 선택한 재현 기록입니다.</p>
+    <hr/><p>추첨 전 저장 추천 최고</p><strong>{actualBest?actualBest+'등':'아직 당첨 없음'}</strong>
+   </aside></div>:null}
+  {error&&data&&<p role="status">{error} 마지막으로 받은 자료를 표시합니다.</p>}
  </div>;
 }

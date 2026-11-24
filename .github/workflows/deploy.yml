@@ -4,8 +4,11 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # Saturday 22:17 and Sunday 07:17 KST; second attempt for delayed sources.
-    - cron: '17 13,22 * * 6'
+    # Saturday 21:07–21:57 KST every five minutes, then every ten minutes until 22:57.
+    - cron: '7,12,17,22,27,32,37,42,47,52,57 12 * * 6'
+    - cron: '7,17,27,37,47,57 13 * * 6'
+    # Sunday 07:07 KST fallback.
+    - cron: '7 22 * * 6'
 permissions:
   contents: write
   pages: write
@@ -51,13 +54,13 @@ jobs:
         if: steps.scope.outputs.analysis == 'true'
         run: npx tsx scripts/publish-advanced.ts
       - name: Compare candidate scales without changing default settings
-        if: steps.scope.outputs.analysis == 'true'
+        if: steps.scope.outputs.analysis == 'true' && github.event_name != 'schedule'
         run: npx tsx scripts/benchmark-candidates.ts
       - name: General walk-forward check with frozen weights
-        if: steps.scope.outputs.analysis == 'true'
+        if: steps.scope.outputs.analysis == 'true' && github.event_name != 'schedule'
         run: npx tsx scripts/verify-advanced.ts
       - name: Compare all six frozen recommendation settings
-        if: steps.scope.outputs.analysis == 'true'
+        if: steps.scope.outputs.analysis == 'true' && github.event_name != 'schedule'
         run: npx tsx scripts/verify-configurations.ts
       - name: Precompute ranked recommendations for instant public display
         if: steps.scope.outputs.analysis == 'true'

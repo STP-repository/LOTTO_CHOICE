@@ -16,3 +16,12 @@
 .weekly-check-result { margin-left: auto; font-size: 11px; white-space: nowrap; }
 .seed-hits-table th:first-child { width: 24%; }
 .seed-hits-table th:last-child { width: 16%; }
+.weekly-result-grid { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 12px; }
+.selected-ticket-label { width: 100%; font-size: 12px; }
+.selected-best-rank { display: block; margin: 16px 0; font-size: 42px; color: #146440; }
+@media (max-width: 580px) {
+ .weekly-result-grid { grid-template-columns: 1fr; }
+ .selected-best { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+ .selected-best h2 { width: 100%; }
+ .selected-best-rank { margin: 0; font-size: 30px; }
+}

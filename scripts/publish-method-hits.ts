@@ -7,7 +7,8 @@ import {generateFrequencyFilterFive} from '../src/core/frequency-filter-five';
 import {generateCombinedFormulas,generateRecommendationPack} from '../src/core/combined-formulas';
 import {buildMixedPortfolio, buildLowOverlapPortfolio, MIXED_DISPLAY_ORDER} from '../src/core/top-two-portfolio';
 import {checkGame} from '../src/core/ticket';
-import type {MethodHits} from '../src/services/method-five';
+import type {MethodHits,SelectedRound} from '../src/services/method-five';
+import {generateSelectedFive,SELECTED_FIVE_VERSION} from '../src/core/selected-five';
 
 const draws = validateDraws(JSON.parse(await readFile('public/data/full-history.json', 'utf8')).draws);
 const previous: Partial<MethodHits> = await readFile('public/data/method-hits.json', 'utf8')
@@ -51,8 +52,43 @@ const pastPack = previousResult ?? (() => {
   return {draw: settled, frequencyCount: secondary.length, integrated: 'integrated' in pack, replayed: !recorded,
     tickets: [...secondary, ...pack.markov.games].map(({numbers}) => ({numbers, ...checkGame(numbers, settled)}))};
 })();
+const oldSelected=previous.selected;
+const selectedUpcoming=previous.signature===dataSignature(draws)&&oldSelected?.upcoming.targetRound===targetRound&&oldSelected.upcoming.version===SELECTED_FIVE_VERSION
+  ?oldSelected.upcoming:generateSelectedFive(draws);
+const savedSelected=oldSelected?.upcoming.targetRound===settled.round?oldSelected.upcoming:undefined;
+const savedLatest=oldSelected?.latest.draw.round===settled.round&&!oldSelected.latest.replayed?oldSelected.latest:undefined;
+const selectedLatest:SelectedRound=savedLatest?{
+  ...savedLatest,draw:settled,tickets:savedLatest.tickets.map(ticket=>({...ticket,...checkGame(ticket.numbers,settled)})),
+}:{
+  draw:settled,replayed:!savedSelected,tickets:(savedSelected??generateSelectedFive(draws.slice(0,-1))).games
+    .map(game=>({...game,...checkGame(game.numbers,settled)})),
+};
+const oldHistory=oldSelected?.history;
+const baseSignature=dataSignature(draws.slice(0,100));
+const historyRows:SelectedRound[]=oldHistory?.version===SELECTED_FIVE_VERSION&&oldHistory.baseSignature===baseSignature
+  ?oldHistory.rows.filter(row=>row.draw.round<=settled.round):[];
+// Reuse history only when both the draw and its preceding inputs still match.
+const prefixValid=historyRows.every((row,i)=>row.draw.round===i+101&&JSON.stringify(row.draw)===JSON.stringify(draws[i+100]));
+if(!prefixValid)historyRows.length=0;
+for(let i=100+historyRows.length;i<draws.length;i++){
+  const draw=draws[i];
+  historyRows.push({draw,replayed:true,tickets:generateSelectedFive(draws.slice(0,i)).games
+    .map(game=>({...game,...checkGame(game.numbers,draw)}))});
+}
+const selectedTotals=Array.from({length:5},()=>[0,0,0,0,0]);
+let best:{rank:number;round:number;slot:string}|null=null;
+for(const row of historyRows)row.tickets.forEach((ticket,i)=>{
+  if(ticket.rank){
+    selectedTotals[i][ticket.rank-1]++;
+    if(!best||ticket.rank<best.rank)best={rank:ticket.rank,round:row.draw.round,slot:ticket.slot};
+  }
+});
+const archive=(oldSelected?.archive??[]).filter(row=>row.draw.round!==selectedLatest.draw.round);
+if(!selectedLatest.replayed)archive.push(selectedLatest);
+const selected={upcoming:selectedUpcoming,latest:selectedLatest,archive,
+  history:{version:SELECTED_FIVE_VERSION,baseSignature,rows:historyRows,best,totals:selectedTotals},updatedAt:new Date().toISOString()};
 await writeFile('public/data/method-hits.json', JSON.stringify({
   signature: dataSignature(draws), first: draws[100].round, last: draws.at(-1)!.round,
-  rounds: draws.length - 100, totals, latest, adaptive, upcoming,
+  rounds: draws.length - 100, totals, latest, adaptive, upcoming,selected,
   combinedLatest: {...pastPack, draw: settled, tickets: pastPack.tickets.map(({numbers}) => ({numbers, ...checkGame(numbers, settled)}))},
 }));

@@ -5,8 +5,8 @@ export const MIRRORS = ['https://smok95.github.io/lotto/results/all.json', 'http
 const dayMs = 86400000;
 export function seoulDate(now = new Date()) { return new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10); }
 export function expectedRound(now = new Date()) {
-  // Draw is broadcast on Saturday after 20:35 KST; allow publication until 22:00.
-  const first = Date.parse('2002-12-07T22:00:00+09:00');
+  // Accept confirmed published data from 21:00 KST; collection still validates the official response.
+  const first = Date.parse('2002-12-07T21:00:00+09:00');
   return Math.max(0, Math.floor((now.getTime() - first) / (7 * dayMs)) + 1);
 }
 export function validateDraws(input: unknown, now = new Date()): Draw[] {
