@@ -65,7 +65,7 @@ function WeeklyNumbers({numbers,matched=[],bonus}:{numbers:readonly number[];mat
 export function SelectedHistory({data}:{data?:import('../services/method-five').SelectedFiveData}) {
  if(!data)return null;
  const rows=data.history.rows;
- return <section className="panel method-hits"><h2>다섯 방식 · 과거 당첨 대조</h2>
+ return <section className="panel method-hits"><h2>다섯 방식 · 최근 10회 당첨 대조</h2>
   <p>제{rows[0]?.draw.round}~{rows.at(-1)?.draw.round}회 · 매회 5조합 · 과거 결과로 선택한 설정의 사후 재현입니다.</p>
   <table className="method-hits-table"><thead><tr><th>추천 방식</th>{[1,2,3,4,5].map(rank=><th key={rank}>{rank}등</th>)}</tr></thead>
    <tbody>{data.history.totals.map((ranks,i)=><tr key={i}><th scope="row">{String.fromCharCode(65+i)} · {data.upcoming.games[i].label}</th>
@@ -117,7 +117,7 @@ export default function DashboardMethodHits({signature}:{signature:string}) {
     </li>)}</ul></section></div>
     <p>갱신 {new Date(data.updatedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})}</p>
    </section><aside className="panel method-hits selected-best">
-    <h2>역대 최고 등수</h2>
+    <h2>최근 10회 최고 등수</h2>
     <p>과거 재현 · 제{data.history.rows[0]?.draw.round}~{data.history.rows.at(-1)?.draw.round}회</p>
     <strong className="selected-best-rank">{data.history.best?data.history.best.rank+'등':'당첨 없음'}</strong>
     {data.history.best&&<p>제{data.history.best.round}회 · {data.history.best.slot}조합</p>}

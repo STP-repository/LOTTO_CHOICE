@@ -1,17 +1,16 @@
 import {numberAnalysis,sampleSix,shape} from './advanced-model';
 import {validateDraws,type Draw} from './data';
-import {generateFrequencyFilterFive} from './frequency-filter-five';
 import {methodSeed} from './method-five';
-import {patternProfile,selectPatternNumbers,weightedIndex} from './pattern';
-import {rng} from './recommend';
+import {weightedIndex} from './pattern';
+import {rng,model} from './recommend';
 
-export const SELECTED_FIVE_VERSION='selected-five-v1';
+export const SELECTED_FIVE_VERSION='selected-five-recent10-v2';
 export const SELECTED_POLICIES=[
- {id:'frequency',name:'최근 100회 빈도 가중 필터',salt:483,description:'최근 100회 빈도 가중 추출과 합계·홀짝·저고·AC 필터'},
+ {id:'markov',name:'번호별 출현 상태 마르코프',salt:70821,description:'번호별 출현·미출현 상태 전이를 공정 추첨 기준으로 수축한 기존 마르코프 점수로 가중 추출'},
  {id:'bayes',name:'베이지안 추정',salt:2361,description:'30·50·100·200회 구간의 베타 사후 평균에서 표준편차를 뺀 값의 평균으로 가중 추출'},
- {id:'reversion',name:'평균회귀',salt:2452,description:'장기·최근 출현 편차가 평균에 가까운 번호에 가중치를 주는 추출'},
- {id:'pairs',name:'동반 출현 번호쌍',salt:1040,description:'먼저 선택한 번호와 함께 출현한 횟수에 따라 다음 번호를 가중 추출'},
- {id:'shape',name:'과거 조합 형태 재현',salt:2621,description:'홀짝·연속번호·직전 회차 중복의 실제 분포를 이용한 후보 추출'},
+ {id:'cold',name:'장기 저빈도 가중 추출',salt:48876,description:'전체 이력의 저빈도 점수를 정규화한 기존 model.cold에 0.2를 더해 가중 추출'},
+ {id:'pairs',name:'동반 출현 번호쌍',salt:12737,description:'먼저 선택한 번호와 함께 출현한 횟수에 따라 다음 번호를 가중 추출'},
+ {id:'overdue',name:'미출현 기간 가중 추출',salt:78366,description:'마지막 출현 후 경과 회차를 정규화한 기존 model.gap에 0.2를 더해 가중 추출'},
 ] as const;
 
 export function selectedIdentity(pack:ReturnType<typeof generateSelectedFive>){
@@ -25,6 +24,9 @@ export function generateSelectedFive(input:Draw[],seed?:number,fixed:number[]=[]
   list.some(n=>!Number.isInteger(n)||n<1||n>45))||fixed.some(n=>excluded.includes(n)))throw Error('고정수는 최대5개이며 1~45의 서로 다른 번호를 입력해 주세요.');
  if(45-excluded.length<6)throw Error('사용할 수 있는 번호가 최소6개 필요합니다.');
  const targetRound=history.at(-1)!.round+1,baseSeed=seed??methodSeed(targetRound),stats=numberAnalysis(history);
+ const m=model(history);
+ const weightsByMethod={markov:stats.map(n=>n.scores[1]),bayes:stats.map(n=>n.scores[2]),
+  cold:m.cold.slice(1).map(v=>.2+v),overdue:m.gap.slice(1).map(v=>.2+v)};
  const pairs=Array.from({length:46},()=>new Uint32Array(46)),counts=new Uint32Array(46);
  for(const draw of history)for(const a of draw.numbers){
   counts[a]++;
@@ -33,20 +35,14 @@ export function generateSelectedFive(input:Draw[],seed?:number,fixed:number[]=[]
  const games=SELECTED_POLICIES.map((policy,index)=>{
   const random=rng((baseSeed^policy.salt)>>>0);
   let numbers:number[];
-  if(policy.id==='frequency'){
-   const first=generateFrequencyFilterFive(history,(baseSeed^policy.salt)>>>0,fixed,excluded).games[0];
-   if(!first)throw Error('빈도 가중 필터 조건을 만족하는 조합을 찾지 못했습니다. 고정수·제외수를 조정해 주세요.');
-   numbers=first.numbers;
-  }else if(policy.id==='shape'){
-   numbers=selectPatternNumbers(patternProfile(history),1,random,fixed,excluded)[0].numbers;
-  }else if(policy.id!=='pairs'&&!fixed.length&&!excluded.length){
-   numbers=sampleSix(random,stats.map(n=>n.scores[policy.id==='bayes'?2:3]));
+  if(policy.id!=='pairs'&&!fixed.length&&!excluded.length){
+   numbers=sampleSix(random,weightsByMethod[policy.id]);
   }else{
    numbers=[...fixed];
    while(numbers.length<6){
     const available=Array.from({length:45},(_,i)=>i+1).filter(n=>!numbers.includes(n)&&!excluded.includes(n));
     const weights=available.map(number=>{
-     if(policy.id!=='pairs')return stats[number-1].scores[policy.id==='bayes'?2:3];
+     if(policy.id!=='pairs')return weightsByMethod[policy.id][number-1];
      return numbers.length?numbers.reduce((sum,from)=>sum+(pairs[from][number]+1)/(counts[from]+45),0)/numbers.length:1;
     });
     numbers.push(available[weightedIndex(weights,random)]);

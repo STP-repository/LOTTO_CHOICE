@@ -61,8 +61,8 @@ export default function MethodFive({fallback}:{fallback:Dataset|null}) {
   <section className="panel">
    <h2>다섯 방식으로 추천 5조합</h2>
    <p role="status">{r?'제'+r.targetRound+'회 대상 · 제'+r.last.round+'회까지 반영':error||'확정 당첨 기록을 불러오는 중…'}</p>
-   <p>빈도 가중 필터·베이지안 추정·평균회귀·동반 출현 번호쌍·과거 조합 형태 재현에서 한 장씩 생성합니다.</p>
-   <p className="muted">과거 결과를 보고 선택한 시드 설정을 사용합니다. 과거 재현 등수는 미래 당첨 확률의 증거가 아닙니다.</p>
+   <p>마르코프·베이지안 추정·장기 저빈도·동반 출현 번호쌍·미출현 기간에서 한 장씩 생성합니다.</p>
+   <p className="muted">최근 10회 결과를 보고 선택한 시드 설정입니다. 과거 재현 등수는 미래 당첨 확률의 증거가 아닙니다.</p>
    <fieldset disabled={busy||!r}><legend>고정수·제외수 (선택)</legend><div className="controls">
     <label>고정수 (최대 5개)<input value={fixed} placeholder="예시 3, 11" onChange={e=>{setFixed(e.target.value);clear();}}/></label>
     <label>제외수<input value={excluded} placeholder="예시 2, 19" onChange={e=>{setExcluded(e.target.value);clear();}}/></label>

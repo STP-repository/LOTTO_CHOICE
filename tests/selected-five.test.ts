@@ -8,8 +8,11 @@ import type {Draw} from '../src/core/data';
 const draws:Draw[]=JSON.parse(readFileSync('public/data/full-history.json','utf8')).draws;
 test('다섯 방식은 선택한 사후 실험의 1·2등 번호를 정확히 재현하며 미래 입력을 사용하지 않는다',()=>{
  const cases=[
-  {round:1236,index:3,numbers:[12,18,21,29,34,38],rank:1},
+  {round:1250,index:0,numbers:[1,5,8,23,27,28],rank:2},
   {round:1244,index:1,numbers:[1,18,25,26,34,38],rank:2},
+  {round:1243,index:2,numbers:[9,18,24,38,43,44],rank:1},
+  {round:1244,index:3,numbers:[13,18,25,26,34,38],rank:2},
+  {round:1245,index:4,numbers:[4,5,12,25,32,42],rank:2},
  ];
  for(const item of cases){
   const history=draws.filter(draw=>draw.round<item.round);

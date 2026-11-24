@@ -64,13 +64,14 @@ const selectedLatest:SelectedRound=savedLatest?{
     .map(game=>({...game,...checkGame(game.numbers,settled)})),
 };
 const oldHistory=oldSelected?.history;
-const baseSignature=dataSignature(draws.slice(0,100));
+const historyStart=Math.max(100,draws.length-10);
+const baseSignature=dataSignature(draws.slice(0,historyStart));
 const historyRows:SelectedRound[]=oldHistory?.version===SELECTED_FIVE_VERSION&&oldHistory.baseSignature===baseSignature
   ?oldHistory.rows.filter(row=>row.draw.round<=settled.round):[];
 // Reuse history only when both the draw and its preceding inputs still match.
-const prefixValid=historyRows.every((row,i)=>row.draw.round===i+101&&JSON.stringify(row.draw)===JSON.stringify(draws[i+100]));
+const prefixValid=historyRows.every((row,i)=>row.draw.round===draws[historyStart+i]?.round&&JSON.stringify(row.draw)===JSON.stringify(draws[historyStart+i]));
 if(!prefixValid)historyRows.length=0;
-for(let i=100+historyRows.length;i<draws.length;i++){
+for(let i=historyStart+historyRows.length;i<draws.length;i++){
   const draw=draws[i];
   historyRows.push({draw,replayed:true,tickets:generateSelectedFive(draws.slice(0,i)).games
     .map(game=>({...game,...checkGame(game.numbers,draw)}))});
